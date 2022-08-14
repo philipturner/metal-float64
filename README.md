@@ -1,6 +1,6 @@
 # Metal Float64
 
-Emulating double-precision arithmetic on Apple GPUs.
+Emulating double-precision arithmetic on Apple GPUs, with full IEEE compliance. Based on initial estimates, additions and multiplications will have 1/64 the throughput of their 32-bit counterparts. This is the same throughput ratio as native FP64 on recent NVIDIA GPUs.
 
 This only runs on Apple silicon. x86 Macs have either AMD or Intel GPUs, which have hardware double precision. For these devices, use OpenCL on macOS (if it permits double precision) or switch to Windows with Bootcamp.
 
