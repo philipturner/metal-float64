@@ -24,6 +24,9 @@ let package = Package(
       resources: [
         // Does not work when compiling shaders from source (such as command-line builds). Only
         // through Xcode for now.
+        //
+        // TODO: Use runtime compilation instead so I can disable fast math and function inlining,
+        // without creating an Xcode project.
         .process("Shaders"),
       ]),
     .testTarget(
