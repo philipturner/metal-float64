@@ -24,7 +24,8 @@ let package = Package(
       resources: [
         // Does not work when compiling shaders from source (such as command-line builds). Only
         // through Xcode for now.
-        //
+//        .process("Shaders")
+        
         // TODO: Use runtime compilation instead so I can disable fast math and function inlining,
         // without creating an Xcode project. Alternatively, compile these using the command-line
         // Metal compiler so that I can use headers properly.
@@ -32,7 +33,7 @@ let package = Package(
         // End goal: a Metal dynamic library that external applications can call into. Up to 4-wide
         // vectorized operations to amortize function calling overhead, decide on a maximum call
         // call stack depth.
-        .process("Shaders"),
+        .copy("Shaders"),
       ]),
     .testTarget(
       name: "MetalFloat64Tests",
