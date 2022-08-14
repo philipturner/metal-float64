@@ -6,5 +6,5 @@
 //
 
 #include <metal_stdlib>
-#include "float64_h.metal"
+#include "metal_double_h.metal"
 using namespace metal;
