@@ -20,7 +20,12 @@ let package = Package(
     // Targets can depend on other targets in this package, and on products in packages this package depends on.
     .target(
       name: "MetalFloat64",
-      dependencies: []),
+      dependencies: [],
+      resources: [
+        // Does not work when compiling shaders from source (such as command-line builds). Only
+        // through Xcode for now.
+        .process("Shaders"),
+      ]),
     .testTarget(
       name: "MetalFloat64Tests",
       dependencies: ["MetalFloat64"]),
