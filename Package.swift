@@ -29,7 +29,9 @@ let package = Package(
         // without creating an Xcode project. Alternatively, compile these using the command-line
         // Metal compiler so that I can use headers properly.
         //
-        // End goal: a Metal dynamic library that external applications can call into.
+        // End goal: a Metal dynamic library that external applications can call into. Up to 4-wide
+        // vectorized operations to amortize function calling overhead, decide on a maximum call
+        // call stack depth.
         .process("Shaders"),
       ]),
     .testTarget(
