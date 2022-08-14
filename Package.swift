@@ -28,6 +28,8 @@ let package = Package(
         // TODO: Use runtime compilation instead so I can disable fast math and function inlining,
         // without creating an Xcode project. Alternatively, compile these using the command-line
         // Metal compiler so that I can use headers properly.
+        //
+        // End goal: a Metal dynamic library that external applications can call into.
         .process("Shaders"),
       ]),
     .testTarget(
