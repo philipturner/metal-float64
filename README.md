@@ -10,6 +10,10 @@ This project will produce a Metal dynamic library and a header, which other appl
 
 Since this requires function pointers and Metal dynamic libraries, it only runs on Apple6 family or newer GPUs. This includes the A13 Bionic and all other Apple GPUs that support the Metal 3 feature set.
 
+## Features
+
+The initial implementation of this library may only support 64-bit add, multiply, and FMA. More complex math functions may roll out later, including division and transcendentals. The library could also make fully inlined trivial operations like absolute value and negate, or permit fusing them with a complex 64-bit operation.
+
 ## Attribution
 
 This project uses ideas from [SoftFloat](https://github.com/ucb-bar/berkeley-softfloat-3) to emulate IEEE-compliant FP64 arithmetic using 64-bit integer operations. It optimizes the implementation for SIMD execution, which favors minimizing divergence and branching. This creates slightly more overhead in best-case scenarios, but ~10x faster performance in worst-case scenarios.
