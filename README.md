@@ -2,13 +2,13 @@
 
 > Still in the planning stage - this is not a finished library!
 
-Emulating double-precision arithmetic on Apple GPUs, with full IEEE compliance. Based on initial estimates, additions and multiplications will have 1/64 the throughput of their 32-bit counterparts. This is the same throughput ratio as native FP64 on recent NVIDIA GPUs.
+Emulating double-precision arithmetic on Apple GPUs, with full IEEE compliance. Based on theoretical estimates, additions and multiplications will have 1/32-1/64 the throughput of their 32-bit counterparts. This is the same throughput ratio as native FP64 on recent NVIDIA GPUs.
 
-This is optimized for Apple silicon, although it technically runs on x86 Macs. For AMD GPUs with hardware double precision, use OpenCL instead for maximum performance. For Intel GPUs, use the CPU if most of the compute workload is FP64.
+This library is optimized for Apple silicon, although it technically runs on x86 Macs. For AMD GPUs with hardware double precision, use OpenCL instead for maximum performance. For Intel GPUs, use the CPU if most of the compute workload is FP64.
 
-This project will produce a Metal dynamic library and a header, which other applications can utilize for double-precision arithmetic. It must be a Metal dynamic library to use function calls, because code would become extremely bloated otherwise. This library provides vectorized versions of each function (up to 4-wide) so that clients can amortize the overhead of calling into functions.
+The source code compiles into a Metal dynamic library and a header, which other applications can utilize for double-precision arithmetic. It must be a Metal dynamic library to use function calls, because code would become extremely bloated otherwise. This library provides vectorized versions of each function (up to 4-wide) so that clients can amortize the overhead of calling into functions.
 
-Since this requires function pointers and Metal dynamic libraries, it only runs on Apple6 family or newer GPUs. This includes the A13 Bionic and all other Apple GPUs that support the Metal 3 feature set.
+Since this requires function pointers and Metal dynamic libraries, it only runs on Apple6 family or newer GPUs. This includes the A13 Bionic and all other Apple GPUs that support the Metal 3 feature set. For x86 Macs, it runs on all devices supporting macOS Ventura.
 
 ## Features
 
