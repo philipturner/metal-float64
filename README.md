@@ -16,4 +16,4 @@ The initial implementation of this library may only support 64-bit add, multiply
 
 ## Attribution
 
-This project uses ideas from [SoftFloat](https://github.com/ucb-bar/berkeley-softfloat-3) to emulate IEEE-compliant FP64 arithmetic using 64-bit integer operations. It optimizes the implementation for SIMD execution, which favors minimizing divergence and branching. This creates slightly more overhead in best-case scenarios, but ~10x faster performance in worst-case scenarios.
+This project uses ideas from [SoftFloat](https://github.com/ucb-bar/berkeley-softfloat-3) to emulate IEEE-compliant FP64 arithmetic using 32-bit integer operations. It optimizes the implementation for SIMD execution, which favors minimizing divergence and branching. This creates slightly more overhead in best-case scenarios, but ~10x faster performance in worst-case scenarios.
