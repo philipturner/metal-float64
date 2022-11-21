@@ -14,6 +14,10 @@ Since this requires function pointers and Metal dynamic libraries, it only runs 
 
 The initial implementation of this library may only support 64-bit add, multiply, and FMA. More complex math functions may roll out later, including division and transcendentals. The library could also make fully inlined trivial operations like absolute value and negate, or permit fusing them with a complex 64-bit operation.
 
+Other features:
+- SIMD-scoped reductions of `double` that massively reduce the number of function calls. For example, a version of `simdgroup_matrix` usable in a BLAS library.
+- Implement 64-bit atomics similarly to the [Nanite workaround](https://github.com/philipturner/ue5-nanite-macos/tree/main/AtomicsWorkaround). This isn't true 64-bit atomics. It requires operating on a 128-bit chunk of memory, but provides 64-bit atomic functionality.
+
 ## Attribution
 
 This project uses ideas from [SoftFloat](https://github.com/ucb-bar/berkeley-softfloat-3) to emulate IEEE-compliant FP64 arithmetic using 32-bit integer operations. It optimizes the implementation for SIMD execution, which favors minimizing divergence and branching. This creates slightly more overhead in best-case scenarios, but ~10x faster performance in worst-case scenarios.
