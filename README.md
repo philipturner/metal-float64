@@ -16,7 +16,9 @@ The initial implementation of this library may only support 64-bit add, multiply
 
 Other features:
 - SIMD-scoped reductions of `double` that massively reduce the number of function calls. For example, a version of `simdgroup_matrix` usable in a BLAS library.
-- 64-bit atomics based on the [Nanite workaround](https://github.com/philipturner/ue5-nanite-macos/tree/main/AtomicsWorkaround). This isn't standards-compliant 64-bit atomics. It operates on a 128-bit chunk of memory, but provides 64-bit atomic functionality.
+- 64-bit atomics based on the [Nanite workaround](https://github.com/philipturner/ue5-nanite-macos/tree/main/AtomicsWorkaround). This isn't standards-compliant 64-bit atomics. It operates on a 128-bit chunk of memory, but provides 64-bit atomic functionality.\*
+
+> \*This should be split into another library.
 
 ## Attribution
 
