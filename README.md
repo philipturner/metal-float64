@@ -10,6 +10,15 @@ The source code compiles into a Metal dynamic library and a header, which other 
 
 Since this requires function pointers and Metal dynamic libraries, it only runs on Apple6 family or newer GPUs. This includes the A13 Bionic and all other Apple GPUs that support the Metal 3 feature set. For x86 Macs, it runs on all devices supporting macOS Ventura.
 
+## Usage
+
+Compile the Metal library using `build.sh` and run the test suite. Inside the repository's directory, locate `.build/MetalFloat64`. This folder is the build product.
+
+```
+bash build.sh
+swift test
+```
+
 ## Features
 
 The initial implementation of this library may only support 64-bit add, multiply, and FMA. More complex math functions may roll out later, including division and transcendentals. The library could also make fully inlined trivial operations like absolute value and negate, or permit fusing them with a complex 64-bit operation.

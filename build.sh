@@ -1,5 +1,7 @@
 #!/bin/bash
 # Script for compiling and packaging the Metal dynamic library.
+# This also generates and updates the test suite's resources.
+# TODO: Make a test metallib that's linked against the build product.
 
 # Parse command-line arguments.
 BUILD_SDK="macosx"
@@ -30,30 +32,41 @@ fi
 # 'build' directory aliases '.build' from SwiftPM. It is recognized by the
 # '.gitignore', so you won't push unwanted files to the Git repository.
 if [[ ! -e ".build" ]]; then
-  mkdir .build
+  mkdir ".build"
 fi
-PACKAGE_DIR=$(pwd)
-BUILD_DIR="${PACKAGE_DIR}/.build"
-cd .build
+SWIFT_PACKAGE_DIR=$(pwd)
+BUILD_DIR="${SWIFT_PACKAGE_DIR}/.build"
+cd ".build"
 
-# Copy Metal source files.
-SOURCE_DIR="${BUILD_DIR}/MetalFloat64"
-cp -r "${PACKAGE_DIR}/Sources/MetalFloat64" $SOURCE_DIR
-SOURCE_FILES=$(find . -name \*.metal)
+# Create folder for packaging the library.
+cp -r "${SWIFT_PACKAGE_DIR}/Sources/MetalFloat64" $BUILD_DIR
+cd "MetalFloat64"
+PACKAGED_LIBRARY_DIR=$(pwd)
+
+# Switch to 'lib' before generating relative source file paths.
+if [[ ! -e "lib" ]]; then
+  mkdir "lib"
+fi
+cd "lib"
 
 # Compile the library.
-# TODO: Determine whether using '@rpath' instead of '@loader_path' causes problems.
-LIBRARY_NAME="MetalFloat64"
-xcrun -sdk $BUILD_SDK metal $SOURCE_FILES \
-  -I ./MetalFloat64/include \
-  -o "lib${LIBRARY_NAME}.metallib" \
+SOURCE_FILES=$(find ../src -name \*.metal)
+LIBRARY_NAME="libMetalFloat64"
+xcrun -sdk $BUILD_SDK metal \
+  $SOURCE_FILES \
+  -I "../include" \
+  -o "${LIBRARY_NAME}.metallib" \
   -dynamiclib \
   -frecord-sources=flat \
   -fvisibility=hidden \
-  -install_name "@rpath/lib${LIBRARY_NAME}.metallib" \
+  -install_name "@loader_path/${LIBRARY_NAME}.metallib" \
 
-echo $(ls)
+start_yellow="$(printf '\e[0;33m')"
+end_yellow="$(printf '\e[0m')"
+colorized_package_path="${start_yellow}${PACKAGED_LIBRARY_DIR}${end_yellow}"
+echo "Library packaged at: ${colorized_package_path}"
 
-# Create folder structure and copy library.
-
-# Copy headers to destination.
+# Copy package into test resources
+resource_copy_src=${PACKAGED_LIBRARY_DIR}
+resource_copy_dst="${SWIFT_PACKAGE_DIR}/Tests/MetalFloat64Tests/Resources"
+cp -r $resource_copy_src $resource_copy_dst

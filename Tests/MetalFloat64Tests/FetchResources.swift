@@ -1,7 +1,6 @@
 import XCTest
 import Metal
 
-fileprivate var _isXcode: Bool?
 fileprivate var _subpaths: [String] = []
 fileprivate var _fileMap: [String: String] = [:]
 
@@ -14,19 +13,20 @@ func fetchPath(forResource name: String, ofType ext: String) -> String {
     return path
   }
   
-  if _isXcode == nil {
-    let resourcesPath = Bundle.module.resourcePath!
-    let testResourcesPath = resourcesPath + "/Resources"
-    guard let _ = try? FileManager.default
-      .contentsOfDirectory(atPath: testResourcesPath) else {
-      fatalError("Not Xcode or command-line build.")
-    }
-    
+  // Strangely, the previous statement sometimes fails in command-line builds.
+  let resourcesPath = Bundle.module.resourcePath!
+  let testResourcesPath = resourcesPath + "/Resources"
+  let testContents = try? FileManager.default
+    .contentsOfDirectory(atPath: testResourcesPath)
+  if testContents != nil {
     // Xcode build
-    _subpaths = try! FileManager.default
-      .subpathsOfDirectory(atPath: resourcesPath)
-    _subpaths = _subpaths.map { resourcesPath + "/" + $0 }
+  } else {
+    // Command-line build
   }
+  
+  _subpaths = try! FileManager.default
+    .subpathsOfDirectory(atPath: resourcesPath)
+  _subpaths = _subpaths.map { resourcesPath + "/" + $0 }
   
   let fileName = name + "." + ext
   if let cachedPath = _fileMap[fileName] {
