@@ -1,11 +1,7 @@
 import XCTest
-@testable import MetalFloat64
 
 final class MetalFloat64Tests: XCTestCase {
-  func testExample() throws {
-    // This is an example of a functional test case.
-    // Use XCTAssert and related functions to verify your tests produce the correct
-    // results.
-    
+  func testMetallibExists() throws {
+    _ = fetchPath(forResource: "README", ofType: "md")
   }
 }
