@@ -12,12 +12,24 @@ Since this requires function pointers and Metal dynamic libraries, it only runs 
 
 ## Usage
 
-Compile the Metal library using `build.sh` and run the test suite. Inside the repository's directory, locate `.build/MetalFloat64`. This folder is the build product.
+Compile the Metal library using `build.sh`, then run the test suite.
 
 ```
 bash build.sh
 swift test
 ```
+
+Locate `.build/MetalFloat64` inside the repo's directory. That folder contains the headers and dynamic library.
+
+```
+ls .build/MetalFloat64/usr/lib
+ls .build/MetalFloat64/usr/include
+# Expected output:
+# libMetalFloat64.metallib  libMetalFloat64.metallibsym
+# MetalFloat64.h
+```
+
+TODO: Instructions for linking the library from command-line, and how to use when compiling sources at runtime
 
 ## Features
 

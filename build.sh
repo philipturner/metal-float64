@@ -1,7 +1,6 @@
 #!/bin/bash
 # Script for compiling and packaging the Metal dynamic library.
 # This also generates and updates the test suite's resources.
-# TODO: Make a test metallib that's linked against the build product.
 
 # Parse command-line arguments.
 BUILD_SDK="macosx"
@@ -50,23 +49,52 @@ fi
 cd "lib"
 
 # Compile the library.
+# - Uses '-Os' to encourage force-noinlines to work correctly.
+# - '@rpath' causes a massive headache; use '@loader_path' instead. This means
+#   'libMetalFloat64' must reside in the same directory as any clients.
 SOURCE_FILES=$(find ../src -name \*.metal)
-LIBRARY_NAME="libMetalFloat64"
 xcrun -sdk $BUILD_SDK metal \
   $SOURCE_FILES \
+  -o "libMetalFloat64.metallib" \
   -I "../include" \
-  -o "${LIBRARY_NAME}.metallib" \
+  -Os \
   -dynamiclib \
   -frecord-sources=flat \
   -fvisibility=hidden \
-  -install_name "@loader_path/${LIBRARY_NAME}.metallib" \
+  -install_name "@loader_path/libMetalFloat64.metallib" \
+
+# Compile the test library.
+TEST_FILES=$(find ../tests -name \*.metal)
+xcrun -sdk $BUILD_SDK metal \
+  $TEST_FILES \
+  -o "Tests.metallib" \
+  -I "../include" \
+  -L "../lib" \
+  -lMetalFloat64 \
+
+# Copy libraries into test resources
+resource_copy_src=${PACKAGED_LIBRARY_DIR}
+resource_copy_dst="${SWIFT_PACKAGE_DIR}/Tests/MetalFloat64Tests/Resources"
+cp -r "${resource_copy_src}/lib/libMetalFloat64.metallib" \
+      "${resource_copy_dst}/libMetalFloat64.metallib"
+cp -r "${resource_copy_src}/lib/Tests.metallib" \
+      "${resource_copy_dst}/Tests.metallib"
+
+# Prepare "usr" directory.
+if [[ -e "${PACKAGED_LIBRARY_DIR}/usr" ]]; then
+  # `mv` fails if something already exists here.
+  rm -r "${PACKAGED_LIBRARY_DIR}/usr"
+fi
+mkdir "${PACKAGED_LIBRARY_DIR}/usr"
+
+# Finish packaging library
+rm -r "${PACKAGED_LIBRARY_DIR}/lib/Tests.metallib"
+rm -r "${PACKAGED_LIBRARY_DIR}/src"
+rm -r "${PACKAGED_LIBRARY_DIR}/tests"
+mv -f "${PACKAGED_LIBRARY_DIR}/include" "${PACKAGED_LIBRARY_DIR}/usr"
+mv -f "${PACKAGED_LIBRARY_DIR}/lib" "${PACKAGED_LIBRARY_DIR}/usr"
 
 start_yellow="$(printf '\e[0;33m')"
 end_yellow="$(printf '\e[0m')"
 colorized_package_path="${start_yellow}${PACKAGED_LIBRARY_DIR}${end_yellow}"
 echo "Library packaged at: ${colorized_package_path}"
-
-# Copy package into test resources
-resource_copy_src=${PACKAGED_LIBRARY_DIR}
-resource_copy_dst="${SWIFT_PACKAGE_DIR}/Tests/MetalFloat64Tests/Resources"
-cp -r $resource_copy_src $resource_copy_dst

@@ -6,7 +6,7 @@
 //
 
 #include <metal_stdlib>
-#include "Double.h"
+#include <MetalFloat64/MetalFloat64.h>
 using namespace metal;
 
 typedef double_t my_double2_t;
