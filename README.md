@@ -43,4 +43,4 @@ Other features:
 
 ## Attribution
 
-This project uses ideas from [SoftFloat](https://github.com/ucb-bar/berkeley-softfloat-3) to emulate IEEE-compliant FP64 arithmetic using 32-bit integer operations. It optimizes the implementation for SIMD execution, which favors minimizing divergence and branching. This creates slightly more overhead in best-case scenarios, but ~10x faster performance in worst-case scenarios.
+This project uses ideas from [SoftFloat](https://github.com/ucb-bar/berkeley-softfloat-3) to emulate IEEE-compliant FP64 arithmetic using 32-bit integer operations. It optimizes the implementation for SIMD execution, which favors minimizing divergence and branching. This causes a slight overhead in best-case scenarios, but much faster performance in worst-case scenarios.
