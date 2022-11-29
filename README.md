@@ -31,6 +31,8 @@ ls .build/MetalFloat64/usr/include
 
 TODO: Instructions for linking the library from command-line, and how to use when compiling sources at runtime
 
+TODO: Show function call benchmarks. Create method to force-inline adds/multiplies in performance-critical code, which can be harnessed from SPIR-V/hipSYCL/MoltenCL. Use single-scalar ops exposed in the header.
+
 ## Features
 
 The initial implementation of this library may only support 64-bit add, multiply, and FMA. More complex math functions may roll out later, including division and transcendentals. The library could also make fully inlined trivial operations like absolute value and negate, or permit fusing them with a complex 64-bit operation.

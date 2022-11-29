@@ -11,7 +11,7 @@ using namespace metal;
 
 typedef double_t my_double_t;
 
-NEVER_INLINE float4 AAPLUserDylib::getFullScreenColor(float4 inColor)
+NOINLINE float4 AAPLUserDylib::getFullScreenColor(float4 inColor)
 {
   int x = 2;
 #pragma clang loop unroll(full)
@@ -22,12 +22,12 @@ NEVER_INLINE float4 AAPLUserDylib::getFullScreenColor(float4 inColor)
   return float4(inColor.r, inColor.g, inColor.b, 0);
 }
 
-NEVER_INLINE float4 AAPLUserDylib::attemptCallStackOverflow1(float4 input, device uint *flags)
+NOINLINE float4 AAPLUserDylib::attemptCallStackOverflow1(float4 input, device uint *flags)
 {
   return AAPLUserDylib::attemptCallStackOverflow2(input, flags, 0);
 }
 
-NEVER_INLINE float4 AAPLUserDylib::attemptCallStackOverflow2(float4 input, device uint *flags, int counter)
+NOINLINE float4 AAPLUserDylib::attemptCallStackOverflow2(float4 input, device uint *flags, int counter)
 {
   switch (flags[counter]) {
     case 0:
@@ -39,7 +39,7 @@ NEVER_INLINE float4 AAPLUserDylib::attemptCallStackOverflow2(float4 input, devic
   }
 }
 
-NEVER_INLINE float4 AAPLUserDylib::attemptCallStackOverflow3(float4 input, device uint *flags, int counter)
+NOINLINE float4 AAPLUserDylib::attemptCallStackOverflow3(float4 input, device uint *flags, int counter)
 {
   switch (flags[counter]) {
     case 0:
@@ -53,17 +53,17 @@ NEVER_INLINE float4 AAPLUserDylib::attemptCallStackOverflow3(float4 input, devic
 
 // MARK: - Performance Tests
 
-NEVER_INLINE int PerformanceTests::increment(int x, int increment_amount)
+NOINLINE int PerformanceTests::increment(int x, int increment_amount)
 {
   return x + increment_amount;
 }
 
-NEVER_INLINE int2 PerformanceTests::increment(int2 x, int increment_amount)
+NOINLINE int2 PerformanceTests::increment(int2 x, int increment_amount)
 {
   return x + increment_amount;
 }
 
-NEVER_INLINE int4 PerformanceTests::increment(int4 x, int increment_amount)
+NOINLINE int4 PerformanceTests::increment(int4 x, int increment_amount)
 {
   return x + increment_amount;
 }
