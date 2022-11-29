@@ -42,9 +42,9 @@ namespace AAPLUserDylib
 // - TODO: Does increasing number of occupied registers increase overhead?
 namespace PerformanceTests
 {
-  EXPORT int increment(int x);
-  EXPORT int2 increment(int2 x);
-  EXPORT int4 increment(int4 x);
+  EXPORT int increment(int x, int increment_amount);
+  EXPORT int2 increment(int2 x, int increment_amount);
+  EXPORT int4 increment(int4 x, int increment_amount);
 }
 
 #endif /* MetalFloat64_h */

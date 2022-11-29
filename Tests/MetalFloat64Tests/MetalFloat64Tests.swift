@@ -68,8 +68,8 @@ final class MetalFloat64Tests: XCTestCase {
   
   func testFunctionCallOverhead() throws {
     // Allocate input/output buffer.
-    let numInputs = 10_000
-    let numThreads = 1_000_000
+    let numInputs = 1//1_000
+    let numThreads = 100_000
     let inputBufferSize = numInputs * MemoryLayout<Int32>.stride
     let outputBufferSize = numThreads * MemoryLayout<Int32>.stride
     
@@ -81,15 +81,27 @@ final class MetalFloat64Tests: XCTestCase {
     let outputContents = outputBuffer.contents()
       .assumingMemoryBound(to: Int32.self)
     
+    // Ensure output is zero-initialized
+    memset(outputContents, 0, outputBufferSize)
+    
+    for i in 0..<numThreads {
+      outputContents[i] = 0
+    }
+    
     // Amortizes the cost of reading from memory.
-    let opsMultiplier = 4
+    let opsMultiplier = 64
+    let incrementAmounts: [Int32] = .init(repeating: 1, count: opsMultiplier)
     
     var expectedSum: Int32 = 0
     for i in 0..<numInputs {
-      let element = Int32(i % 19)
-      expectedSum += (element + 1) * Int32(opsMultiplier)
-      inputContents[i] = element
-      XCTAssertEqual(outputContents[i], 0, "Output not zero-initialized.")
+      let originalElement = Int32(i % 19)
+      inputContents[i] = originalElement
+      
+      for j in 0..<opsMultiplier {
+        var element = originalElement
+        element = element + incrementAmounts[j]
+        expectedSum += element
+      }
     }
     
     // Iterate over multiple trials.
@@ -105,9 +117,9 @@ final class MetalFloat64Tests: XCTestCase {
         encoder.setBuffer(outputBuffer, offset: 0, index: 1)
         
         var numBytes_copy = inputBufferSize
-        var opsMultiplier_copy = Int32(opsMultiplier)
         encoder.setBytes(&numBytes_copy, length: 4, index: 2)
-        encoder.setBytes(&opsMultiplier_copy, length: 4, index: 3)
+        encoder.setBytes(
+          incrementAmounts, length: incrementAmounts.count * 4, index: 3)
         
         encoder.dispatchThreads(
           MTLSizeMake(numThreads, 1, 1),
@@ -120,6 +132,7 @@ final class MetalFloat64Tests: XCTestCase {
       // Check random places in the output buffer.
       for _ in 0..<100 {
         let i = Int.random(in: 0..<numThreads)
+//        print(i, outputContents[i] == expectedSum)
         XCTAssertEqual(outputContents[i], expectedSum)
       }
       

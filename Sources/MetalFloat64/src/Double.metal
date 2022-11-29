@@ -53,17 +53,17 @@ NEVER_INLINE float4 AAPLUserDylib::attemptCallStackOverflow3(float4 input, devic
 
 // MARK: - Performance Tests
 
-NEVER_INLINE int PerformanceTests::increment(int x)
+NEVER_INLINE int PerformanceTests::increment(int x, int increment_amount)
 {
-  return x + 1;
+  return x + increment_amount;
 }
 
-NEVER_INLINE int2 PerformanceTests::increment(int2 x)
+NEVER_INLINE int2 PerformanceTests::increment(int2 x, int increment_amount)
 {
-  return x + 1;
+  return x + increment_amount;
 }
 
-NEVER_INLINE int4 PerformanceTests::increment(int4 x)
+NEVER_INLINE int4 PerformanceTests::increment(int4 x, int increment_amount)
 {
-  return x + 1;
+  return x + increment_amount;
 }
