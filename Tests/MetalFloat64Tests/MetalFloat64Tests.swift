@@ -68,8 +68,9 @@ final class MetalFloat64Tests: XCTestCase {
   
   func testFunctionCallOverhead() throws {
     // Allocate input/output buffer.
-    let numInputs = 1//1_000
+    let numInputs = 4_000
     let numThreads = 100_000
+    let opsMultiplier = 8
     let inputBufferSize = numInputs * MemoryLayout<Int32>.stride
     let outputBufferSize = numThreads * MemoryLayout<Int32>.stride
     
@@ -89,7 +90,6 @@ final class MetalFloat64Tests: XCTestCase {
     }
     
     // Amortizes the cost of reading from memory.
-    let opsMultiplier = 64
     let incrementAmounts: [Int32] = .init(repeating: 1, count: opsMultiplier)
     
     var expectedSum: Int32 = 0
@@ -105,6 +105,7 @@ final class MetalFloat64Tests: XCTestCase {
     }
     
     // Iterate over multiple trials.
+    var bestThroughput: Double = 0
     for trialID in 0..<10 {
       let commandQueue = Context.global.commandQueue
       let commandBuffer = commandQueue.makeCommandBuffer()!
@@ -147,6 +148,11 @@ final class MetalFloat64Tests: XCTestCase {
       let gigaops_rep = String(format: "%.3f", gigaops)
       
       print("Trial \(trialID + 1): \(time_rep) seconds, \(gigaops_rep) giga-ops")
+      bestThroughput = max(bestThroughput, throughput)
     }
+    
+    let gigaops = bestThroughput / 1e9
+    let gigaops_rep = String(format: "%.3f", gigaops)
+    print("Best throughput: \(gigaops_rep) gigaops")
   }
 }
