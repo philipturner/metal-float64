@@ -21,3 +21,49 @@ NEVER_INLINE float4 AAPLUserDylib::getFullScreenColor(float4 inColor)
   
   return float4(inColor.r, inColor.g, inColor.b, 0);
 }
+
+NEVER_INLINE float4 AAPLUserDylib::attemptCallStackOverflow1(float4 input, device uint *flags)
+{
+  return AAPLUserDylib::attemptCallStackOverflow2(input, flags, 0);
+}
+
+NEVER_INLINE float4 AAPLUserDylib::attemptCallStackOverflow2(float4 input, device uint *flags, int counter)
+{
+  switch (flags[counter]) {
+    case 0:
+      return input * input;
+    case 1:
+      return attemptCallStackOverflow2(input, flags, counter + 1);
+    default:
+      return attemptCallStackOverflow3(input, flags, counter + 1);
+  }
+}
+
+NEVER_INLINE float4 AAPLUserDylib::attemptCallStackOverflow3(float4 input, device uint *flags, int counter)
+{
+  switch (flags[counter]) {
+    case 0:
+      return input + input;
+    case 3:
+      return attemptCallStackOverflow2(input, flags, counter + 1);
+    default:
+      return attemptCallStackOverflow3(input, flags, counter + 1);
+  }
+}
+
+// MARK: - Performance Tests
+
+NEVER_INLINE int PerformanceTests::increment(int x)
+{
+  return x + 1;
+}
+
+NEVER_INLINE int2 PerformanceTests::increment(int2 x)
+{
+  return x + 1;
+}
+
+NEVER_INLINE int4 PerformanceTests::increment(int4 x)
+{
+  return x + 1;
+}

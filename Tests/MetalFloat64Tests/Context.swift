@@ -30,9 +30,9 @@ struct Context {
       let desc = MTLComputePipelineDescriptor()
       desc.computeFunction = function
       
-      // Not sure what a safe call stack depth is. Until I find a bug, I'll set
-      // it to zero.
-      desc.maxCallStackDepth = 0
+      // Set the max call stack depth (default: 1).
+      // Using Metal Shader Validation, you can detect stack overflows.
+      desc.maxCallStackDepth = 5
       
       let pipeline = try! device.makeComputePipelineState(descriptor: desc, options: [], reflection: nil)
       self.pipelines[name] = pipeline

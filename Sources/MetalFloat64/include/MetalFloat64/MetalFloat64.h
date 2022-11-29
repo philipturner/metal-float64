@@ -25,12 +25,26 @@ class double_t {
   ulong data;
 };
 
+// TODO: Move everything below this statement into an archive repository,
+// alongside cycle counters for MoltenCL.
+
 namespace AAPLUserDylib
 {
   // Dummy function, just to test that dynamic linking works.
   EXPORT float4 getFullScreenColor(float4 inColor);
-  EXPORT float4 attemptCallStackOverflow1(float4 input);
-  EXPORT float4 attemptCallStackOverflow2(float4 input);
+  EXPORT float4 attemptCallStackOverflow1(float4 input, device uint *flags);
+  EXPORT float4 attemptCallStackOverflow2(float4 input, device uint *flags, int counter);
+  EXPORT float4 attemptCallStackOverflow3(float4 input, device uint *flags, int counter);
+}
+
+// Measure the overhead of function calls in real-world scenarios.
+// - Tests whether vectorization reduces overhead.
+// - TODO: Does increasing number of occupied registers increase overhead?
+namespace PerformanceTests
+{
+  EXPORT int increment(int x);
+  EXPORT int2 increment(int2 x);
+  EXPORT int4 increment(int4 x);
 }
 
 #endif /* MetalFloat64_h */
