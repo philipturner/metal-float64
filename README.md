@@ -38,9 +38,13 @@ TODO: Show function call benchmarks. Create method to force-inline adds/multipli
 The initial implementation of this library may only support 64-bit add, multiply, and FMA. More complex math functions may roll out later, including division and transcendentals. The library could also make fully inlined trivial operations like absolute value and negate, or permit fusing them with a complex 64-bit operation.
 
 Other features:
+- Emulated 64-bit atomics using a randomly assigned lock for each memory address.
+- Multiple sub-64-bit precisions to balance performance with accuracy.
+- Options to either call into a Metal dynamic library or fully inline the code, depending on tolerance for code bloating.
+<!-- 
 - SIMD-scoped reductions of `double` that massively reduce the number of function calls. For example, a version of `simdgroup_matrix` usable in a BLAS library.
 - 64-bit atomics based on the [Nanite workaround](https://github.com/philipturner/ue5-nanite-macos/tree/main/AtomicsWorkaround). This isn't standards-compliant 64-bit atomics. It operates on a 128-256 bit chunk of memory, but provides 64-bit atomic functionality.
-- Repurposing the `fast::` and `precise::` namespaces for inlined (when possible) and non-inlined versions of each function. If not specified, the library will choose one version based on compiler flags and/or heuristics. Choosing `fast::` will not affect precision; only performance.
+- Repurposing the `fast::` and `precise::` namespaces for inlined (when possible) and non-inlined versions of each function. If not specified, the library will choose one version based on compiler flags and/or heuristics. Choosing `fast::` will not affect precision; only performance. -->
 
 ## Attribution
 
