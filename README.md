@@ -34,7 +34,7 @@ TODO: Instructions for linking the library from command-line, and how to use whe
 TODO: Show function call benchmarks. Create method to force-inline adds/multiplies in performance-critical code, which can be harnessed from SPIR-V/hipSYCL/MoltenCL. Use single-scalar ops exposed in the header.
 
 Precisions:
-- `float64_t` - IEEE 64-bit floating point with 11 bits exponent and 53 bits mantissa, compatible with CPU. Throughput ratio is ~1:56-72 (FMA), ~1:24 (ADD) compared to FP32.
+- `float64_t` - IEEE 64-bit floating point with 11 bits exponent and 53 bits mantissa, compatible with CPU. Throughput ratio is ~1:64-72 (FMA), ~1:24 (ADD) compared to FP32.
 - `float59_t` - GPU-friendly format with 15 bits exponent and 48 bits mantissa, with one bit wasted. Must be converted to/from FP64 on the CPU. Throughput ratio is TODO.
 - `float43_t` - GPU-friendly format with 15 bits exponent and 32 bits mantissa, with 17 bits wasted. Must be converted to/from FP64 on the CPU. Throughput ratio is ~1:30-34 (FMA), ~1:19 (ADD) compared to FP32.
 
