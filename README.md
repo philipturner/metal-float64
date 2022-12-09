@@ -33,6 +33,11 @@ TODO: Instructions for linking the library from command-line, and how to use whe
 
 TODO: Show function call benchmarks. Create method to force-inline adds/multiplies in performance-critical code, which can be harnessed from SPIR-V/hipSYCL/MoltenCL. Use single-scalar ops exposed in the header.
 
+Precisions:
+- `float64_t` - IEEE 64-bit floating point with 11 bits exponent and 53 bits mantissa, compatible with CPU. Throughput ratio is ~1:56-72 compared to FP32.
+- `float59_t` - GPU-friendly format with 15 bits exponent and 48 bits mantissa, with one bit wasted. Must be converted to/from FP64 on the CPU. Throughput ratio is TODO.
+- `float43_t` - GPU-friendly format with 15 bits exponent and 32 bits mantissa, with one bit wasted. Must be converted to/from FP64 on the CPU. Throughput ratio is ~1:30-34 compared to FP32.
+
 This library redefines the `double` keyword using a compiler macro, making it legal to use in MSL. The keyword is associated with one of the extended precisions, which can be chosen through a compiler flag. This lets you easily switch an entire code base to a different precision, and see how it affects performance.
 
 Vectorized functions of `double2`, `double3`, and `double4` are also redefined, along with vectorized functions of each extended precision.
