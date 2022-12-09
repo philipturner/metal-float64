@@ -33,7 +33,7 @@ TODO: Instructions for linking the library from command-line, and how to use whe
 
 Precisions:
 - `float64_t` - IEEE 64-bit floating point with 11 bits exponent and 53 bits mantissa, compatible with CPU. Throughput ratio is ~1:60-80 (FMA), ~1:25 (ADD) compared to FP32.
-- `float59_t` - GPU-friendly format with 15 bits exponent and 48 bits mantissa, one bit wasted. Must be converted to/from FP64 on the CPU. Throughput ratio is TODO (FMA), ~1:15 (ADD) compared to FP32.
+- `float59_t` - GPU-friendly format with 15 bits exponent and 48 bits mantissa, one bit wasted. Must be converted to/from FP64 on the CPU. Throughput ratio is ~1:35-40 (FMA), ~1:15 (ADD) compared to FP32.
 - `float43_t` - GPU-friendly format with 15 bits exponent and 32 bits mantissa, 17 bits wasted. Must be converted to/from FP64 on the CPU. Throughput ratio is ~1:25-30 (FMA), ~1:10 (ADD) compared to FP32.
 - The lower precisions always round ties to zero (except during MUL), do not support denormals, and any arithmetic operator handling INF or NAN will have undefined behavior. <!-- If any of these drawbacks causes systematic accuracy issues for your use case, please leave an issue in this repository. I can create a special compiler option to enable some of this behavior. You do not have to revert completely to `float64_t` performance. If you are experiencing significant drift toward zero, some variants of MUL and FMA utilize RTE. These are ~10% slower than their faster counterparts. -->
 
