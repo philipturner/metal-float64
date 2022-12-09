@@ -32,7 +32,7 @@ ls .build/MetalFloat64/usr/include
 TODO: Instructions for linking the library from command-line, and how to use when compiling sources at runtime
 
 Precisions:
-- `float64_t` - IEEE 64-bit floating point with 11 bits exponent and 53 bits mantissa, compatible with CPU. Throughput ratio is ~1:64-72 (FMA), ~1:24 (ADD) compared to FP32.
+- `float64_t` - IEEE 64-bit floating point with 11 bits exponent and 53 bits mantissa, compatible with CPU. Throughput ratio is ~1:64-80 (FMA), ~1:24 (ADD) compared to FP32.
 - `float59_t` - GPU-friendly format with 15 bits exponent and 48 bits mantissa, one bit wasted. Must be converted to/from FP64 on the CPU. Throughput ratio is TODO (FMA), ~1:20 (ADD) compared to FP32.
 - `float43_t` - GPU-friendly format with 15 bits exponent and 32 bits mantissa, 17 bits wasted. Must be converted to/from FP64 on the CPU. Throughput ratio is ~1:30-34 (FMA), ~1:15 (ADD) compared to FP32.
 - The lower precisions have less mantissa, but are otherwise IEEE compliant.
