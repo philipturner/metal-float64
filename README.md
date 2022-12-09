@@ -41,7 +41,7 @@ Other features:
 - Emulated 64-bit atomics using a randomly assigned lock for each memory address.
 - Multiple sub-64-bit precisions to balance performance with accuracy.
 - Options to either call into a Metal dynamic library or fully inline the code, depending on tolerance for code bloating.
-- Redefines the `double` keyword using a compiler macro, making it legal to use in MSL. The keyword is associated with one of the extended precisions, which can be set at compile time. This lets you easily switch an entire code base to a different precision, and see how it affects performance.
+- Redefines the `double` keyword using a compiler macro, making it legal to use in MSL. The keyword is associated with one of the extended precisions, which can be chosen through a compiler flag. This lets you easily switch an entire code base to a different precision, and see how it affects performance.
 
 <!-- 
 - SIMD-scoped reductions of `double` that massively reduce the number of function calls. For example, a version of `simdgroup_matrix` usable in a BLAS library.
