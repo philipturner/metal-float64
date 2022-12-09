@@ -35,7 +35,7 @@ Precisions:
 - `float64_t` - IEEE 64-bit floating point with 11 bits exponent and 53 bits mantissa, compatible with CPU. Throughput ratio is ~1:60-80 (FMA), ~1:25 (ADD) compared to FP32.
 - `float59_t` - GPU-friendly format with 15 bits exponent and 48 bits mantissa, one bit wasted. Must be converted to/from FP64 on the CPU. Throughput ratio is TODO (FMA), ~1:15 (ADD) compared to FP32.
 - `float43_t` - GPU-friendly format with 15 bits exponent and 32 bits mantissa, 17 bits wasted. Must be converted to/from FP64 on the CPU. Throughput ratio is ~1:25-30 (FMA), ~1:10 (ADD) compared to FP32.
-- The lower precisions have less mantissa and always round ties to zero, but are otherwise IEEE compliant. If you are experiencing significant drift toward zero, a compiler option can enable RTE for MUL and the multiply step in FMA.
+- The lower precisions have less mantissa and always round ties to zero, but are otherwise IEEE compliant. If you are experiencing significant drift toward zero, a compiler option can enable RTE for MUL and the multiply step in FMA. This will harm performance by ~10%.
 
 This library redefines the `double` keyword using a compiler macro, making it legal to use in MSL. The keyword is associated with one of the extended precisions, which can be chosen through a compiler flag. This lets you easily switch an entire code base to a different precision, and see how it affects performance.
 
