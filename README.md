@@ -31,8 +31,6 @@ ls .build/MetalFloat64/usr/include
 
 TODO: Instructions for linking the library from command-line, and how to use when compiling sources at runtime
 
-TODO: Show function call benchmarks. Create method to force-inline adds/multiplies in performance-critical code, which can be harnessed from SPIR-V/hipSYCL/MoltenCL. Use single-scalar ops exposed in the header.
-
 Precisions:
 - `float64_t` - IEEE 64-bit floating point with 11 bits exponent and 53 bits mantissa, compatible with CPU. Throughput ratio is ~1:64-72 (FMA), ~1:24 (ADD) compared to FP32.
 - `float59_t` - GPU-friendly format with 15 bits exponent and 48 bits mantissa, one bit wasted. Must be converted to/from FP64 on the CPU. Throughput ratio is TODO (FMA), ~1:20 (ADD) compared to FP32.
