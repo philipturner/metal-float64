@@ -48,6 +48,9 @@ if [[ ! -e "lib" ]]; then
 fi
 cd "lib"
 
+# Fuse headers into single-file header.
+swift "${SWIFT_PACKAGE_DIR}/build.swift" $PACKAGED_LIBRARY_DIR "--merge-headers"
+
 # Compile the library.
 # - Uses '-Os' to encourage force-noinlines to work correctly.
 # - '@rpath' causes a massive headache; use '@loader_path' instead. This means
