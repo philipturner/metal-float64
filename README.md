@@ -4,11 +4,11 @@
 
 Emulating double-precision arithmetic on Apple GPUs, with full IEEE compliance. Based on theoretical estimates, additions and multiplications will have 1/32-1/64 the throughput of their 32-bit counterparts. This is the same throughput ratio as native FP64 on recent NVIDIA GPUs.
 
-This library is optimized for Apple silicon, although it technically runs on x86 Macs. For AMD GPUs with hardware double precision, OpenCL provides better FP64 performance. For Intel GPUs, FP64 emulation will often make GPU slower than multicore CPU, even when 90% of the compute workload is FP32.
+MetalFloat64 runs fastest on Apple silicon, although it also runs on Intel Macs. For AMD GPUs with hardware double precision, OpenCL provides better performance for FP64-heavy workloads. For Intel GPUs, FP64 emulation will often make GPU slower than multicore CPU, even when 90% of the compute workload is FP32.
 
-The source code compiles into a Metal dynamic library and a header, which other applications can utilize for double-precision arithmetic. Some FP64 operations can be fully inlined for maximum ALU performance, but others are so large they would bloat the client executable. To address this problem, larger functions invoke function calls into the Metal dynamic library. If possible, perform operations on multiple floats at a time (e.g. `double2`, `double3`, `double4`). The vectorized function variants minimize binary size and amortize the overhead of function calls.
+The source code compiles into a Metal dynamic library and a header, which other applications can utilize for double-precision arithmetic. Some FP64 operations can be fully inlined for maximum ALU performance, but others are so large they would bloat the client executable. To address this problem, larger functions invoke function calls into the Metal dynamic library. If possible, clients should operate on multiple floats at a time (e.g. `double2`, `double3`, `double4`). The vectorized function variants minimize binary size and amortize the overhead of function calls.
 
-Since MetalFloat64 requires function pointers and Metal dynamic libraries, it only runs on Apple6 family or newer GPUs. This includes the A13 Bionic and all other Apple GPUs that support the Metal 3 feature set. For x86 Macs, it runs on all devices supporting macOS Ventura.
+Since MetalFloat64 requires function pointers and Metal dynamic libraries, it only runs on Apple6 family or newer GPUs. This includes the A13 Bionic and all other Apple GPUs that support the Metal 3 feature set. For Intel Macs, it runs on all devices supporting macOS Ventura.
 
 ## Usage
 
@@ -31,15 +31,12 @@ ls .build/MetalFloat64/usr/include
 
 TODO: Instructions for linking the library from command-line, and how to use when compiling sources at runtime
 
-Precisions:
+This library redefines the `double` keyword using a compiler macro, making it legal to use in MSL. The keyword is a typealias of one of the precisions below, which can be chosen through a compiler flag. This lets you easily switch an entire code base to a different precision, and see how it affects performance. The keywords `double2`, `double3`, and `double4` are also redefined in this manner. Vectorized variants of underlying precisions use `vec<float64_t, 2>` syntax.
+
 - `float64_t` - IEEE 64-bit floating point with 11 bits exponent and 53 bits mantissa, compatible with CPU. Throughput ratio is ~1:60-80 (FMA), ~1:25 (ADD) compared to FP32.
 - `float59_t` - GPU-friendly format with 15 bits exponent and 48 bits mantissa, one bit wasted. Must be converted to/from FP64 on the CPU. Throughput ratio is ~1:35-40 (FMA), ~1:15 (ADD) compared to FP32.
 - `float43_t` - GPU-friendly format with 15 bits exponent and 32 bits mantissa, 17 bits wasted. Must be converted to/from FP64 on the CPU. Throughput ratio is ~1:25-30 (FMA), ~1:10 (ADD) compared to FP32.
 - The lower precisions always round ties to zero, do not support denormals, and any arithmetic operator handling INF or NAN will have undefined behavior.
-
-This library redefines the `double` keyword using a compiler macro, making it legal to use in MSL. The keyword is associated with one of the extended precisions, which can be chosen through a compiler flag. This lets you easily switch an entire code base to a different precision, and see how it affects performance.
-
-Vectorized functions of `double2`, `double3`, and `double4` are also redefined, along with vectorized functions of each extended precision.
 
 ## Features
 
