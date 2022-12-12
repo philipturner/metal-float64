@@ -14,14 +14,14 @@ Since MetalFloat64 requires function pointers and Metal dynamic libraries, it on
 
 Compile the Metal library using `build.sh`, then run the test suite.
 
-```
+```bash
 bash build.sh
 swift test
 ```
 
 Locate `.build/MetalFloat64` inside the repo's directory. That folder contains the headers and dynamic library.
 
-```
+```bash
 ls .build/MetalFloat64/usr/lib
 ls .build/MetalFloat64/usr/include
 # Expected output:
@@ -31,16 +31,23 @@ ls .build/MetalFloat64/usr/include
 
 TODO: Instructions for linking the library from command-line, and how to use when compiling sources at runtime
 
-This library redefines the `double` keyword using a compiler macro, making it legal to use in MSL. The keyword is a typealias of one of the precisions below, which can be chosen through a compiler flag. This lets you easily switch an entire code base to a different precision, and see how it affects performance. The keywords `double2`, `double3`, and `double4` are also redefined in this manner. Vectorized variants of underlying precisions use `vec<float64_t, 2>` syntax.
+```metal
+#include <metal_stdlib>
+#include <MetalFloat64/MetalFloat64.h>
+using namespace metal;
+using namespace MetalFloat64;
+```
+
+This library redefines the `double` keyword using a compiler macro, making it legal to use in MSL. The keyword is a typealias of one of the precisions below, which can be chosen through a compiler flag. The compiler flag you easily switch an entire code base to a different precision, and see how it affects performance. Vectorized variants of underlying precisions use `vec<float64_t, 2>` syntax. The keywords `double2`, `double3`, and `double4` are redefined as typealiases of such vectors.
 
 - `float64_t` - IEEE 64-bit floating point with 11 bits exponent and 53 bits mantissa, compatible with CPU. Throughput ratio is ~1:60-80 (FMA), ~1:25 (ADD) compared to FP32.
 - `float59_t` - GPU-friendly format with 15 bits exponent and 48 bits mantissa, one bit wasted. Must be converted to/from FP64 on the CPU. Throughput ratio is ~1:35-40 (FMA), ~1:15 (ADD) compared to FP32.
 - `float43_t` - GPU-friendly format with 15 bits exponent and 32 bits mantissa, 17 bits wasted. Must be converted to/from FP64 on the CPU. Throughput ratio is ~1:25-30 (FMA), ~1:10 (ADD) compared to FP32.
-- The lower precisions always round ties to zero, do not support denormals, and any arithmetic operator handling INF or NAN will have undefined behavior.
+- The lower precisions always round ties to zero, do not support denormals, and any instance of INF or NAN produces undefined behavior.
 
 ## Features
 
-The initial implementation of this library may only support 64-bit add, multiply, and FMA. More complex math functions may roll out later, including division and square root, then finally transcendentals. Complex functions will only be available through function calls. The library should also permit trivial operations like absolute value and negate. These are so small they will only be available through inlining.
+The initial implementation of this library may only support 64-bit add, multiply, and FMA. More complex math functions may roll out later, including division and square root, then finally transcendentals. Complex functions will only be available through function calls. The library will also provide trivial operations like absolute value and negate. These are so small they only occur through inlining.
 
 Furthermore, the library will emulate 64-bit integer atomics by randomly assigning locks to a certain memory address. The client must allocate a lock buffer, then pass it into the library. At runtime, a carefully selected series of 32-bit atomics performs a load, store, or cmpxchg without data races. i64/u64/f64 atomics will be implemented on top of these primitives, matching the capabilities of other data types in the MSL specification. Atomics will only be available through function calls.
 
