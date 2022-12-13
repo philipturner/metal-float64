@@ -9,7 +9,7 @@ import Foundation
 import RegexBuilder
 
 // Script for very complex operations during the build process.
-// Argument 0 - automatically set to this file's name
+// Argument 0 - automatically assigned to this file's name
 // Argument 1 - location of the "MetalFloat64" directory to operate on
 // Argument 2 - task to perform
 
@@ -27,11 +27,11 @@ default:
 // Combine all sub-headers into a single-file header.
 func mergeHeaders() {
   let currentPath = CommandLine.arguments[1]
-  let headersPath = currentPath + "/include/MetalFloat64"
+  let headersDirectory = currentPath + "/include/MetalFloat64"
   
   // Check for library header.
   let fm = FileManager.default
-  let subpaths = try! fm.subpathsOfDirectory(atPath: headersPath)
+  let subpaths = try! fm.subpathsOfDirectory(atPath: headersDirectory)
   let libraryHeaderName = "MetalFloat64.h"
   guard subpaths.contains(libraryHeaderName) else {
     fatalError("Could not find '\(libraryHeaderName)'.")
@@ -47,9 +47,9 @@ func mergeHeaders() {
   }
   
   // Extract library header contents.
-  let libraryHeaderPath = headersPath + "/" + libraryHeaderName
+  let libraryHeaderPath = headersDirectory + "/" + libraryHeaderName
   let inputLines = getLines(atPath: libraryHeaderPath)
-  var output: [Substring] = []
+  var outputLines: [Substring] = []
   
   // Replace any includes that have quotations.
   let includePattern = try! Regex("^\\s*#include \\s*\"(\\S*)\"")
@@ -57,7 +57,7 @@ func mergeHeaders() {
   for line in inputLines {
     // Get header name from regex, otherwise append to output.
     guard let match = line.firstMatch(of: includePattern) else {
-      output.append(line)
+      outputLines.append(line)
       continue
     }
     let headerName = String(match[1].substring!)
@@ -69,7 +69,7 @@ func mergeHeaders() {
     }
     
     // Extract sub-header contents.
-    let headerPath = headersPath + "/" + headerName
+    let headerPath = headersDirectory + "/" + headerName
     let headerLines = getLines(atPath: headerPath)
     guard headerLines.count >= 2 else {
       headerError("is too short")
@@ -101,17 +101,21 @@ func mergeHeaders() {
       headerError("had malformatted first line \(presentName)")
     }
     
+    // Append source location directive help with debugging.
+    outputLines.append("#line 0 \"\(headerName)\"")
+    
     // Append the file's contents to output.
-    
-    // Assert the following format at the start of the sub-header:
-    // // MARK: - SUBHEADER_NAME
-    // [newline]
-    // Code, cannot be newline or only-whitespace line.
-//    let headerData = fm.
-    
-//     (linting).
+    outputLines.append(contentsOf: headerLines)
   }
   
-  // TODO: Overwrite the `MetalFloat64` header with the new one, delete smaller
-  // sub-headers.
+  // Delete all headers and replace with the single-file header.
+  for subpath in subpaths {
+    let headerPath = headersDirectory + "/" + subpath
+    try! fm.removeItem(atPath: headerPath)
+  }
+  let output = outputLines.joined(separator: "\n")
+  let outputData = output.data(using: .utf8)!
+  guard fm.createFile(atPath: libraryHeaderPath, contents: outputData) else {
+    fatalError("Error overwriting file '\(libraryHeaderPath)'.")
+  }
 }

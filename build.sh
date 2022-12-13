@@ -48,7 +48,7 @@ if [[ ! -e "lib" ]]; then
 fi
 cd "lib"
 
-# Fuse headers into single-file header.
+# Fuse the headers into single file.
 swift "${SWIFT_PACKAGE_DIR}/build.swift" $PACKAGED_LIBRARY_DIR "--merge-headers"
 
 # Compile the library.
