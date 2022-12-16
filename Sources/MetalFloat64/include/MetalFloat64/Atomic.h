@@ -2,20 +2,19 @@
 
 // TODO: Wrap atomic<double> in a custom generic type, similar to how we evaded
 // the name collision for custom vec<>.
-// TODO: Use compiler macro to redirect ulong atomics to MetalFloat64.
-// TODO: The API-side shim delegates to an actual function call which has two
-// underscores.
+// TODO: Use compiler macro to redirect ulong atomics to MetalFloat64, if
+// needed. May need an "actual_func" for each of these.
+// TODO: Ensure the functions didn't alias by checking runtime behavior.
 
 // Actual functions exposed by the header.
+
+extern void __metal_atomic64_store_explicit(threadgroup ulong * object, ulong desired);
+extern void __metal_atomic64_store_explicit(device ulong * object, ulong desired);
 
 namespace MetalFloat64
 {
 EXPORT uint increment(uint x);
-EXPORT void __atomic_store_explicit(threadgroup long * object, long desired);
-EXPORT void __atomic_store_explicit(device long * object, long desired);
-EXPORT void __atomic_store_explicit(threadgroup ulong * object, ulong desired);
-EXPORT void __atomic_store_explicit(device ulong * object, ulong desired);
-}
+} // namespace MetalFloat64
 
 // Ensure that public API matches the MSLib.
 
@@ -83,28 +82,51 @@ struct _valid_store_type<T, typename enable_if<_disjunction<
 template <typename T, typename U, typename _E = typename enable_if<_valid_store_type<threadgroup T *>::value && is_convertible<T, U>::value>::type>
 METAL_FUNC void atomic_store_explicit(volatile threadgroup _atomic<T> * object, U desired, memory_order order) METAL_CONST_ARG(order) METAL_VALID_STORE_ORDER(order)
 {
-  __atomic_store_explicit(&object->__s, decltype(object->__s)(desired));
+  __metal_atomic64_store_explicit(
+    (threadgroup ulong*)&object->__s,
+    as_type<ulong>(decltype(object->__s)(desired)));
 }
 template <typename T, typename U, typename _E = typename enable_if<_valid_store_type<device T *>::value && is_convertible<T, U>::value>::type>
 METAL_FUNC void atomic_store_explicit(volatile device _atomic<T> *object, U desired, memory_order order) METAL_CONST_ARG(order) METAL_VALID_STORE_ORDER(order)
 {
-  // TODO: Why doesn't this fail at compile-time?
-  __atomic_store_explicit(&object->__s, decltype(object->__s)(desired), int(order), __METAL_MEMORY_SCOPE_DEVICE__);
+  __metal_atomic64_store_explicit(
+    (device ulong*)&object->__s,
+    as_type<ulong>(decltype(object->__s)(desired)));
 }
+
+// Bypass the name collision between `metal::atomic` and `MetalFloat64::atomic`.
 
 namespace
 {
+template <typename T>
+struct __atomic_base {};
 
-}
+#define MAKE_METAL_BASE(T) \
+template <> \
+struct __atomic_base<T> { \
+  using actual_atomic = metal::atomic<T>; \
+}; \
+
+MAKE_METAL_BASE(bool);
+MAKE_METAL_BASE(int);
+MAKE_METAL_BASE(uint);
+MAKE_METAL_BASE(float);
+
+#undef MAKE_METAL_BASE
+
+#define MAKE_METAL_FLOAT64_BASE(T) \
+template <> \
+struct __atomic_base<T> { \
+  using actual_atomic = MetalFloat64::atomic<T>; \
+}; \
+
+
+} // namespace
 
 } // namespace MetalFloat64
 
-// Bypass the name collision between `metal::` and `MetalFloat64::` atomics.
 
-// move namespace enclosure here
 
-#define _atomic MetalFloat64::__common_atomic
-#define atomic MetalFloat64::__common_atomic
 
-// Hopefully, functions don't name-collide.
-// TODO: Ensure the functions didn't alias by checking runtime behavior.
+#define _atomic MetalFloat64::__metal_float64_common_atomic
+#define atomic MetalFloat64::__metal_float64_common_atomic

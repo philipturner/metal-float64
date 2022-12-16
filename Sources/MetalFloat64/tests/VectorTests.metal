@@ -21,7 +21,7 @@ inline void test_double_redefinition() {
   vec<double, 1> dvar5;
   vec<double, 2> dvar6;
   vec<double, 3> dvar7;
-  vec<double, 4> dvar8;
+  MetalFloat64::vec<double, 4> dvar8;
   vec<double, 5> dvar9;
   
   dvar2.xy;
@@ -32,7 +32,7 @@ inline void test_double_redefinition() {
   float3 fvar3;
   float4 fvar4;
   vec<float, 1> fvar5;
-  vec<float, 2> fvar6;
+  metal::vec<float, 2> fvar6;
   vec<float, 3> fvar7;
   vec<float, 4> fvar8;
   vec<float, 5> fvar9;

@@ -163,20 +163,17 @@ public:
 
 #undef VEC3_SWIZZLES
 #undef VEC2_SWIZZLES
-}
 
 // Bypass the name collision between `metal::vec` and `MetalFloat64::vec`.
-
-namespace MetalFloat64 {
 
 namespace
 {
 template <typename T, uint I>
-struct base {};
+struct __base_vec {};
 
 #define MAKE_METAL_BASE(T) \
 template <unsigned int I> \
-struct base<T, I> { \
+struct __base_vec<T, I> { \
   using actual_vec = metal::vec<T, I>; \
 }; \
 
@@ -185,14 +182,22 @@ MAKE_METAL_BASE(float);
 #undef MAKE_METAL_BASE
 
 template <unsigned int I>
-struct base<float64_t, I> {
+struct __base_vec<float64_t, I> {
   using actual_vec = vec<float64_t, I>;
 };
 } // namespace
 
 template <typename T, unsigned int I>
-using __common_vec = typename base<T, I>::actual_vec;
+using __metal_float64_common_vec = typename __base_vec<T, I>::actual_vec;
 
 } // namespace MetalFloat64
 
-#define vec MetalFloat64::__common_vec
+// Enter the workaround into the `metal` namespace and global context.
+
+using MetalFloat64::__metal_float64_common_vec;
+
+namespace metal {
+using MetalFloat64::__metal_float64_common_vec;
+}
+
+#define vec __metal_float64_common_vec

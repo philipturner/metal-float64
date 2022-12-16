@@ -8,6 +8,7 @@
 import Metal
 
 // TODO: Also create a dummy metallib for linking during the build process.
+// TODO: Create a metallibsym from the dummy metallib.
 // TODO: Change library from NSObject to MTLDynamicLibrary.
 // TODO: Change lock_buffer from NSObject to MTLBuffer.
 

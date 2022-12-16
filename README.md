@@ -55,4 +55,6 @@ Furthermore, the library will emulate 64-bit integer atomics by randomly assigni
 
 ## Attribution
 
-This project uses ideas from [SoftFloat](https://github.com/ucb-bar/berkeley-softfloat-3) and [LLVM](https://github.com/llvm/llvm-project/blob/2e999b7dd1934a44d38c3a753460f1e5a217e9a5/compiler-rt/lib/builtins/fp_lib.h) to emulate IEEE-compliant FP64 math through 32-bit integer operations. The header also duplicates some code from the Metal Standard Library when necessary, in order to create a public API for `double` that matches other types. Locations of copied code are not explicitly outlined, so assume any header code may contain snippets of the MSLib.
+This project uses ideas from [SoftFloat](https://github.com/ucb-bar/berkeley-softfloat-3) and [LLVM](https://github.com/llvm/llvm-project/blob/2e999b7dd1934a44d38c3a753460f1e5a217e9a5/compiler-rt/lib/builtins/fp_lib.h) to emulate IEEE-compliant FP64 math through 32-bit integer operations.
+
+The header also duplicates some code from the Metal Standard Library, in order to create a public API for `double` that matches other types. Locations of copied code are not explicitly outlined, so assume all header files contain snippets of the MSLib. Apple owns the copyright to these code snippets.

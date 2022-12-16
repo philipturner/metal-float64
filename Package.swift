@@ -20,6 +20,9 @@ let package = Package(
   targets: [
     .target(
       name: "MetalAtomic64",
+      resources: [
+        .copy("src/Atomic.metal")
+      ],
       swiftSettings: [.define("METAL_ATOMIC64_C_INTERFACE")]),
     .testTarget(
       name: "MetalFloat64Tests",
