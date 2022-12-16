@@ -1,5 +1,5 @@
 //
-//  Tests.metal
+//  VectorTests.metal
 //  
 //
 //  Created by Philip Turner on 11/22/22.

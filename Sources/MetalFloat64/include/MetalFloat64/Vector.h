@@ -99,12 +99,12 @@ public:
     
   public:
 #define VEC2_SWIZZLES \
-    scalar_swizzle<T, 0> x, r; \
-    scalar_swizzle<T, 1> y, g; \
-    vec2_swizzle<T, 0, 0> xx, rr; \
-    vec2_swizzle<T, 0, 1> xy, rg; \
-    vec2_swizzle<T, 1, 0> yx, gr; \
-    vec2_swizzle<T, 1, 1> yy, gg; \
+scalar_swizzle<T, 0> x, r; \
+scalar_swizzle<T, 1> y, g; \
+vec2_swizzle<T, 0, 0> xx, rr; \
+vec2_swizzle<T, 0, 1> xy, rg; \
+vec2_swizzle<T, 1, 0> yx, gr; \
+vec2_swizzle<T, 1, 1> yy, gg; \
 
     VEC2_SWIZZLES;
   };
@@ -132,18 +132,18 @@ public:
     
   public:
 #define VEC3_SWIZZLES \
-    VEC2_SWIZZLES; \
-    scalar_swizzle<T, 2> z, b; \
-    vec2_swizzle<T, 0, 2> xz, rb; \
-    vec2_swizzle<T, 2, 0> zx, br; \
-    vec2_swizzle<T, 1, 2> yz, gb; \
-    vec2_swizzle<T, 2, 1> zy, bg; \
-    vec3_swizzle<T, 0, 1, 2> xyz, rgb; \
-    vec3_swizzle<T, 0, 2, 1> xzy, rbg; \
-    vec3_swizzle<T, 1, 0, 2> yxz, grb; \
-    vec3_swizzle<T, 1, 2, 0> yzx, gbr; \
-    vec3_swizzle<T, 2, 0, 1> zxy, brg; \
-    vec3_swizzle<T, 2, 1, 0> zyx, bgr; \
+VEC2_SWIZZLES; \
+scalar_swizzle<T, 2> z, b; \
+vec2_swizzle<T, 0, 2> xz, rb; \
+vec2_swizzle<T, 2, 0> zx, br; \
+vec2_swizzle<T, 1, 2> yz, gb; \
+vec2_swizzle<T, 2, 1> zy, bg; \
+vec3_swizzle<T, 0, 1, 2> xyz, rgb; \
+vec3_swizzle<T, 0, 2, 1> xzy, rbg; \
+vec3_swizzle<T, 1, 0, 2> yxz, grb; \
+vec3_swizzle<T, 1, 2, 0> yzx, gbr; \
+vec3_swizzle<T, 2, 0, 1> zxy, brg; \
+vec3_swizzle<T, 2, 1, 0> zyx, bgr; \
 
     VEC3_SWIZZLES;
   };
@@ -163,6 +163,11 @@ public:
 
 #undef VEC3_SWIZZLES
 #undef VEC2_SWIZZLES
+}
+
+// Bypass the name collision between `metal::vec` and `MetalFloat64::vec`.
+
+namespace MetalFloat64 {
 
 namespace
 {
@@ -186,9 +191,8 @@ struct base<float64_t, I> {
 } // namespace
 
 template <typename T, unsigned int I>
-using _vec = typename base<T, I>::actual_vec;
+using __common_vec = typename base<T, I>::actual_vec;
 
 } // namespace MetalFloat64
 
-// Bypasses the name collision between `metal::vec` and `MetalFloat64::vec`.
-#define vec MetalFloat64::_vec
+#define vec MetalFloat64::__common_vec

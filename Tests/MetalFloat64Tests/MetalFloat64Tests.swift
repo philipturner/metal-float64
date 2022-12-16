@@ -26,8 +26,7 @@ final class MetalFloat64Tests: XCTestCase {
 //      encoder.setBuffer(unusedBuffer, offset: 0, index: 0)
 //      encoder.setBuffer(inputBuffer, offset: 0, index: 1)
 //      encoder.dispatchThreads(
-//        MTLSizeMake(1, 1, 1),
-//        threadsPerThreadgroup: MTLSizeMake(1, 1, 1))
+//        MTLSizeMake(1, 1, 1), threadsPerThreadgroup: MTLSizeMake(1, 1, 1))
 //    }
 //
 //    // Check input buffer

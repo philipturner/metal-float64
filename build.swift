@@ -56,6 +56,8 @@ func mergeHeaders() {
   let headerStartPattern = try! Regex("^// MARK: - (.*)")
   for line in inputLines {
     // Get header name from regex, otherwise append to output.
+    // NOTE: Headers should try to mirror naming conventions from the Metal
+    // Standard Library.
     guard let match = line.firstMatch(of: includePattern) else {
       outputLines.append(line)
       continue

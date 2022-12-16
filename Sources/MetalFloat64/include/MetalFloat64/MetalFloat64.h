@@ -13,5 +13,6 @@
 #include "Defines.h"
 #include "Double.h"
 #include "Vector.h"
+#include "Atomic.h"
 
 #endif /* MetalFloat64_MetalFloat64_h */
