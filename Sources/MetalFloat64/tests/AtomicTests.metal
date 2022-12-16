@@ -10,8 +10,7 @@
 using namespace metal;
 using namespace MetalFloat64;
 
-kernel void testAtomicsCompile
- (
+kernel void testAtomicsCompile(
   device void *input [[buffer(0)]],
   device void *output [[buffer(1)]],
   uint tid [[thread_position_in_grid]])

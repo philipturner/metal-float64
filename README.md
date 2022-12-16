@@ -31,7 +31,7 @@ ls .build/MetalFloat64/usr/include
 
 TODO: Instructions for linking the library from command-line, and how to use when compiling sources at runtime
 
-TODO: Sample code for initializing the libMetalAtomic64, specifying the lock buffer address
+TODO: How to initialize the libMetalAtomic64. Make a way to compile without atomics, in case that causes headaches for a build system.
 
 ```metal
 #include <metal_stdlib>
