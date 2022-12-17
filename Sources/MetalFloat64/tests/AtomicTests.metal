@@ -21,4 +21,6 @@ kernel void testAtomicsCompile(
   
   // TODO: Atomics for int, uint, long, ulong
   // TODO: Add argument for lock buffer
+  auto ulong_output = (device ulong*)output;
+  MetalAtomic64::__atomic_store_explicit(ulong_output + tid, 1);
 }

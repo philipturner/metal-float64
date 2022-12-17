@@ -88,7 +88,7 @@ public func metal_atomic64_generate_library(
   // Fetch the float64 library's metal device.
   let device = float64_library.device
   
-  // TODO: Create a dummy metallib for linking during the build process.
+  // TODO: Create a dummy metallib for testing during the build process.
   // TODO: Create a metallibsym from the dummy metallib.
   // TODO: Copy documentation from the Swift file to the C file in "build.sh".
   

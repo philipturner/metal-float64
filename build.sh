@@ -21,7 +21,7 @@ if [[ $# != 0 ]]; then
       invalid_input=true
     fi
   fi
-  
+
   if [[ $invalid_input == true ]]; then
     echo "Usage: build.sh [--platform=[macOS, iOS, tvOS]; default=\"macOS\"]"
     exit -1
@@ -55,16 +55,52 @@ swift "${SWIFT_PACKAGE_DIR}/build.swift" $PACKAGED_LIBRARY_DIR "--merge-headers"
 # - Uses '-Os' to encourage force-noinlines to work correctly.
 # - '@rpath' causes a massive headache; use '@loader_path' instead. This means
 #   'libMetalFloat64' must reside in the same directory as any clients.
-SOURCE_FILES=$(find ../src -name \*.metal)
+FLOAT64_SOURCE_FILES=$(find ../src -name \*.metal)
 xcrun -sdk $BUILD_SDK metal \
-  $SOURCE_FILES \
+  $FLOAT64_SOURCE_FILES \
   -o "libMetalFloat64.metallib" \
   -I "../include" \
   -Os \
   -dynamiclib \
   -frecord-sources=flat \
   -fvisibility=hidden \
-  -install_name "@loader_path/libMetalFloat64.metallib" \
+  -install_name "@loader_path/libMetalFloat64.metallib"
+
+# Compile MetalAtomic64 for CPU and GPU.
+ATOMIC64_SOURCE_DIR="${SWIFT_PACKAGE_DIR}/Sources/MetalAtomic64"
+xcrun -sdk $BUILD_SDK metal \
+  "${ATOMIC64_SOURCE_DIR}/src/Atomic.metal" \
+  -o "libMetalAtomic64.metallib" \
+  -L "../lib" \
+  -lMetalFloat64 \
+  -Os \
+  -dynamiclib \
+  -frecord-sources=flat \
+  -install_name "@loader_path/libMetalAtomic64.metallib"
+
+# Move MetalAtomic64 metallib somewhere that clearly indicates it's a dummy.
+if [[ ! -e "../placeholders" ]]; then
+  mkdir "../placeholders"
+fi
+mv -f "libMetalAtomic64.metallib" "../placeholders/libMetalAtomic64.metallib"
+
+# Embed shader source into the Swift file, copy documentation to C header.
+# swift ...
+cp -r "${ATOMIC64_SOURCE_DIR}/include/MetalAtomic64" "../include/MetalAtomic64"
+
+# Encapsulate the directory that builds this, so we can delete the output
+# files we don't want.
+mkdir tmp && cd tmp
+swiftc \
+  "${ATOMIC64_SOURCE_DIR}/src/GenerateLibrary.swift" \
+  -Onone \
+  -DMETAL_ATOMIC64_C_INTERFACE \
+  -emit-module \
+  -emit-library \
+  -module-name "MetalAtomic64"
+mv "libMetalAtomic64.dylib" "../libMetalAtomic64.dylib"
+cd ../
+rm -rf tmp
 
 # Compile the test library.
 TEST_FILES=$(find ../tests -name \*.metal)
@@ -73,7 +109,9 @@ xcrun -sdk $BUILD_SDK metal \
   -o "Tests.metallib" \
   -I "../include" \
   -L "../lib" \
+  -L "../placeholders" \
   -lMetalFloat64 \
+  -lMetalAtomic64 \
 
 # Copy libraries into test resources
 resource_copy_src=${PACKAGED_LIBRARY_DIR}
@@ -82,6 +120,10 @@ cp -r "${resource_copy_src}/lib/libMetalFloat64.metallib" \
       "${resource_copy_dst}/libMetalFloat64.metallib"
 cp -r "${resource_copy_src}/lib/Tests.metallib" \
       "${resource_copy_dst}/Tests.metallib"
+
+## TODO: This shouldn't be copied.
+#cp -r "${resource_copy_src}/placeholders/libMetalAtomic64.metallib" \
+#      "${resource_copy_dst}/libMetalAtomic64.metallib"
 
 # Prepare "usr" directory.
 if [[ -e "${PACKAGED_LIBRARY_DIR}/usr" ]]; then
@@ -96,6 +138,7 @@ rm -r "${PACKAGED_LIBRARY_DIR}/src"
 rm -r "${PACKAGED_LIBRARY_DIR}/tests"
 mv -f "${PACKAGED_LIBRARY_DIR}/include" "${PACKAGED_LIBRARY_DIR}/usr"
 mv -f "${PACKAGED_LIBRARY_DIR}/lib" "${PACKAGED_LIBRARY_DIR}/usr"
+mv -f "${PACKAGED_LIBRARY_DIR}/placeholders" "${PACKAGED_LIBRARY_DIR}/usr"
 
 start_yellow="$(printf '\e[0;33m')"
 end_yellow="$(printf '\e[0m')"
