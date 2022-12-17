@@ -26,6 +26,16 @@ default:
   fatalError("Invalid task name.")
 }
 
+// Utility function for reading files.
+func getLines(atPath path: String) -> [Substring] {
+  guard let data = FileManager.default.contents(atPath: path) else {
+    fatalError("Could not find file '\(path)'.")
+  }
+  let string = String(bytes: data, encoding: .utf8)!
+  return string.split(
+    separator: "\n", omittingEmptySubsequences: false)
+}
+
 // Combine all sub-headers into a single-file header.
 func mergeFloat64Headers() {
   let currentPath = CommandLine.arguments[1]
@@ -37,15 +47,6 @@ func mergeFloat64Headers() {
   let libraryHeaderName = "MetalFloat64.h"
   guard subpaths.contains(libraryHeaderName) else {
     fatalError("Could not find '\(libraryHeaderName)'.")
-  }
-  
-  func getLines(atPath path: String) -> [Substring] {
-    guard let data = fm.contents(atPath: path) else {
-      fatalError("Could not find file '\(path)'.")
-    }
-    let string = String(bytes: data, encoding: .utf8)!
-    return string.split(
-      separator: "\n", omittingEmptySubsequences: false)
   }
   
   // Extract library header contents.
@@ -124,8 +125,54 @@ func mergeFloat64Headers() {
   }
 }
 
-// Copy "Atomic.metal" into "GenerateLibrary.swift" and write the result to the
-// current directory.
+// Copy "Atomic.metal" into "GenerateLibrary.swift" and overwrite the previous
+// source file.
 func embedAtomic64Sources() {
+  let currentPath = CommandLine.arguments[1]
+  let sourcesDirectory = currentPath + "/src"
   
+  // Check for the source files.
+  let fm = FileManager.default
+  let subpaths = try! fm.subpathsOfDirectory(atPath: sourcesDirectory)
+  let metalSourceName = "Atomic.metal"
+  guard subpaths.contains(metalSourceName) else {
+    fatalError("Could not find '\(metalSourceName)'.")
+  }
+  let swiftSourceName = "GenerateLibrary.swift"
+  guard subpaths.contains(swiftSourceName) else {
+    fatalError("Could not find '\(swiftSourceName)'.")
+  }
+  
+  let metalSourcePath = sourcesDirectory + "/" + metalSourceName
+  let swiftSourcePath = sourcesDirectory + "/" + swiftSourceName
+  let metalLines = getLines(atPath: metalSourcePath)
+  let swiftLines = getLines(atPath: swiftSourcePath)
+  
+  // Pattern to search for:
+  // private let shader_source = """
+  // [metal source code]
+  // """ // end copying here
+  let literalStart = swiftLines.firstIndex(where: {
+    $0.starts(with: "private let shader_source = \"\"\"")
+  })
+  let literalEnd = swiftLines.lastIndex(where: {
+    $0.starts(with: "\"\"\" // end copying here")
+  })
+  guard let literalStart = literalStart,
+        let literalEnd = literalEnd else {
+    fatalError("Could not locate string literal in Swift source.")
+  }
+  
+  // Piece together chunks of the input files.
+  var outputLines: [Substring] = []
+  outputLines.append(contentsOf: swiftLines[...literalStart])
+  outputLines.append(contentsOf: metalLines)
+  outputLines.append(contentsOf: swiftLines[literalEnd...])
+  
+  // Overwrite the existing source file.
+  let output = outputLines.joined(separator: "\n")
+  let outputData = output.data(using: .utf8)!
+  guard fm.createFile(atPath: swiftSourcePath, contents: outputData) else {
+    fatalError("Error overwriting file '\(swiftSourcePath)'.")
+  }
 }

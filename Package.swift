@@ -20,8 +20,15 @@ let package = Package(
   targets: [
     .target(
       name: "MetalAtomic64",
-      resources: [
-        .copy("src/Atomic.metal")
+      exclude: [
+        // Xcode will not let us include "src/Atomic.metal" as a typical
+        // resource. It always invokes the Metal compiler on the file. To work
+        // around this, we embed Metal sources into the original Swift file.
+        // The build script embeds the sources automatically.
+        "src/Atomic.metal",
+      ],
+      sources: [
+        "src/GenerateLibrary.swift",
       ]),
     .testTarget(
       name: "MetalFloat64Tests",

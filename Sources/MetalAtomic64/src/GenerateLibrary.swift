@@ -7,10 +7,7 @@
 
 import Metal
 
-// This conditional exposes the C function and assumes the shader source will
-// be copied into a string literal.
 #if METAL_ATOMIC64_C_INTERFACE
-
 @_cdecl("metal_atomic64_generate_library")
 public func metal_atomic64_generate_library(
   _ float64_library: UnsafeRawPointer?,
@@ -20,20 +17,18 @@ public func metal_atomic64_generate_library(
   // Accept float64_library reference at +0.
   let _float64_library = Unmanaged<MTLDynamicLibrary>
     .fromOpaque(float64_library!).takeUnretainedValue()
-  var _atomic64_library: MTLDynamicLibrary?
-  var _lock_buffer: MTLBuffer?
   
   // Call into Swift version of the function (not visible from C). We make a
   // separate function for C because otherwise, it might incorrectly reference-
   // count the return values.
-  metal_atomic64_generate_library(
-    _float64_library, &_atomic64_library, &_lock_buffer)
+  let (_atomic64_library, _lock_buffer) =
+    metal_atomic64_generate_library(_float64_library)
   
   // Return outputs at +1.
   atomic64_library.pointee = Unmanaged<MTLDynamicLibrary>
-    .passRetained(_atomic64_library!).toOpaque()
+    .passRetained(_atomic64_library).toOpaque()
   lock_buffer.pointee = Unmanaged<MTLBuffer>
-    .passRetained(_lock_buffer!).toOpaque()
+    .passRetained(_lock_buffer).toOpaque()
 }
 #endif
 
@@ -81,24 +76,120 @@ public func metal_atomic64_generate_library(
 ///   - lock_buffer: The lock buffer whose base address is encoded into
 ///     `atomic64_library`.
 public func metal_atomic64_generate_library(
-  _ float64_library: MTLDynamicLibrary,
-  _ atomic64_library: inout MTLDynamicLibrary?,
-  _ lock_buffer: inout MTLBuffer?
+  _ float64_library: MTLDynamicLibrary
+) -> (
+  atomic64_library: MTLDynamicLibrary,
+  lock_buffer: MTLBuffer
 ) {
   // Fetch the float64 library's metal device.
   let device = float64_library.device
-  
-  // TODO: Create a dummy metallib for testing during the build process.
-  // TODO: Create a metallibsym from the dummy metallib.
-  // TODO: Copy documentation from the Swift file to the C file in "build.sh".
-  
-  // Return something right now, just to make progress on the build system.
-  atomic64_library = float64_library
   
   // TODO: Determine the actual necessary length.
   let lockBufferLength = 128
   let bufferStorageMode = device.hasUnifiedMemory
     ? MTLResourceOptions.storageModeShared : .storageModePrivate
-  lock_buffer = device.makeBuffer(
+  let lockBuffer = device.makeBuffer(
     length: lockBufferLength, options: bufferStorageMode)!
+  let lockBufferAddress = NSNumber(value: lockBuffer.gpuAddress)
+  
+  // Temporarily storing something (e.g "50") in the buffer's first 8 bytes,
+  // to prove it was accessed successfully. A final implementation should erase
+  // this code.
+  let lockBufferContents = lockBuffer.contents()
+    .assumingMemoryBound(to: UInt32.self)
+  lockBufferContents[0] = 50
+  
+  let options = MTLCompileOptions()
+  options.libraries = [float64_library]
+  options.optimizationLevel = .size
+  options.preprocessorMacros = [
+    "METAL_ATOMIC64_LOCK_BUFFER_ADDRESS": lockBufferAddress
+  ]
+  options.libraryType = .dynamic
+  options.installName = "@loader_path/libMetalAtomic64.metallib"
+  let atomic64Library_raw = try! device.makeLibrary(
+    source: shader_source, options: options)
+  let atomic64Library = try! device.makeDynamicLibrary(
+    library: atomic64Library_raw)
+  
+  return (atomic64Library, lockBuffer)
 }
+
+private let shader_source = """
+//
+//  Atomic.metal
+//  
+//
+//  Created by Philip Turner on 12/16/22.
+//
+
+#include <metal_stdlib>
+using namespace metal;
+
+// When compiling sources at runtime, your only option is to expose all symbols
+// by default. Therefore, we explicitly set the EXPORT macro to nothing.
+#define EXPORT
+#define NOEXPORT static
+
+// Apply this to functions that shouldn't be inlined internally.
+// Place at the function definition.
+#define NOINLINE __attribute__((__noinline__))
+
+// Apply this to force-inline functions internally.
+// The Metal Standard Library uses it, so it should work reliably.
+#define ALWAYS_INLINE __attribute__((__always_inline__))
+
+// MARK: - Embedded Reference to Lock Buffer
+
+#if defined(METAL_ATOMIC64_PLACEHOLDER)
+static constant size_t lock_buffer_address = 0;
+#else
+static constant size_t lock_buffer_address = METAL_ATOMIC64_LOCK_BUFFER_ADDRESS;
+#endif
+
+struct LockBufferAddressWrapper {
+  device uint* address;
+};
+
+NOEXPORT ALWAYS_INLINE device uint* __get_lock_buffer() {
+  auto const_ref = reinterpret_cast<constant LockBufferAddressWrapper&>
+    (lock_buffer_address);
+  return const_ref.address;
+};
+
+// MARK: - Implementation of Exposed Functions
+
+namespace MetalFloat64 {
+extern uint increment(uint x);
+}
+
+namespace MetalAtomic64
+{
+/// We utilize the type ID at runtime to dynamically dispatch to different
+/// functions. This approach minimizes the time necessary to compile
+/// MetalAtomic64 from scratch at runtime, while reducing binary size. Also,
+/// atomic operations will be memory bound, so the ALU time for switching over
+/// enum cases should be hidden.
+enum TypeID: ushort {
+  i64 = 0, // signed long
+  u64, // unsigned long
+  f64, // IEEE double precision
+  f59, // 59-bit reduced precision
+  f43 // 43-bit reduced precision
+};
+
+EXPORT void __atomic_store_explicit(threadgroup ulong * object, ulong desired) {
+  uint x = 1;
+  x = MetalFloat64::increment(x);
+  object[0] += x;
+  threadgroup_barrier(mem_flags::mem_threadgroup);
+}
+
+EXPORT void __atomic_store_explicit(device ulong * object, ulong desired) {
+  uint x = 1;
+  x = MetalFloat64::increment(x);
+  object[0] += x + __get_lock_buffer()[0];
+}
+} // namespace MetalAtomic64
+
+""" // end copying here

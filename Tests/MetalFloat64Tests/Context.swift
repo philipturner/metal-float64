@@ -6,6 +6,7 @@
 //
 
 import Metal
+import MetalAtomic64
 
 struct Context {
   static let global = Context()
@@ -17,12 +18,29 @@ struct Context {
   // List of pipelines, identified by their name in shader code.
   var pipelines: [String: MTLComputePipelineState] = [:]
   
+  private var float64_library: MTLDynamicLibrary
+  private var atomic64_library: MTLDynamicLibrary
+  private var lock_buffer: MTLBuffer
+  
   init() {
     self.device = MTLCreateSystemDefaultDevice()!
     self.commandQueue = device.makeCommandQueue()!
     
-    let libraryPath = fetchPath(forResource: "Tests", ofType: "metallib")
-    self.library = try! device.makeLibrary(URL: .init(filePath: libraryPath))
+    // Fetch libraries and library paths.
+    let testLibraryPath = fetchPath(forResource: "Tests", ofType: "metallib")
+    let testLibraryURL = URL(filePath: testLibraryPath)
+    let librariesURL = testLibraryURL.deletingLastPathComponent()
+    let float64LibraryURL = librariesURL
+      .appending(component: "libMetalFloat64.metallib")
+    self.float64_library = try! device
+      .makeDynamicLibrary(url: float64LibraryURL)
+    (self.atomic64_library, self.lock_buffer) = metal_atomic64_generate_library(float64_library)
+    
+    // Write the atomics library so you can load the test library.
+    let atomic64LibraryURL = librariesURL
+      .appending(component: "libMetalAtomic64.metallib")
+    try! self.atomic64_library.serialize(to: atomic64LibraryURL)
+    self.library = try! device.makeLibrary(URL: testLibraryURL)
     
     // Cannot contain vertex, fragment, or ray tracing functions.
     for name in library.functionNames {

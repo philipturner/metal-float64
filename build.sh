@@ -49,7 +49,8 @@ fi
 cd "lib"
 
 # Fuse the headers into single file.
-swift "${SWIFT_PACKAGE_DIR}/build.swift" $PACKAGED_LIBRARY_DIR \
+swift "${SWIFT_PACKAGE_DIR}/build.swift" \
+  $PACKAGED_LIBRARY_DIR \
   "--merge-float64-headers"
 
 # Compile the library.
@@ -75,6 +76,7 @@ xcrun -sdk $BUILD_SDK metal \
   -L "../lib" \
   -lMetalFloat64 \
   -Os \
+  -DMETAL_ATOMIC64_PLACEHOLDER \
   -dynamiclib \
   -frecord-sources=flat \
   -install_name "@loader_path/libMetalAtomic64.metallib"
@@ -88,7 +90,8 @@ mv -f "libMetalAtomic64.metallib" "../placeholders/libMetalAtomic64.metallib"
 # Encapsulate the directory that builds this, so we can delete any output
 # files we don't want.
 mkdir tmp && cd tmp
-swift "${SWIFT_PACKAGE_DIR}/build.swift" $PACKAGED_LIBRARY_DIR \
+swift "${SWIFT_PACKAGE_DIR}/build.swift" \
+  "${SWIFT_PACKAGE_DIR}/Sources/MetalAtomic64" \
   "--embed-atomic64-sources"
 swiftc \
   "${ATOMIC64_SOURCE_DIR}/src/GenerateLibrary.swift" \
@@ -100,6 +103,9 @@ swiftc \
 mv "libMetalAtomic64.dylib" "../libMetalAtomic64.dylib"
 cd ../
 rm -rf tmp
+
+# Copy the C header to the includes directory.
+cp -r "${ATOMIC64_SOURCE_DIR}/include/MetalAtomic64" "../include/MetalAtomic64"
 
 # Compile the test library.
 TEST_FILES=$(find ../tests -name \*.metal)
