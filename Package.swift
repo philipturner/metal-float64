@@ -23,6 +23,8 @@ let package = Package(
       resources: [
         .copy("src/Atomic.metal")
       ],
+      // TODO: Remove this after debugging; we do not want to expose this to the
+      // Swift package API.
       swiftSettings: [.define("METAL_ATOMIC64_C_INTERFACE")]),
     .testTarget(
       name: "MetalFloat64Tests",

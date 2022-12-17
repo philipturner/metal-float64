@@ -8,8 +8,19 @@
 
 // Actual functions exposed by the header.
 
-extern void __metal_atomic64_store_explicit(threadgroup ulong * object, ulong desired);
-extern void __metal_atomic64_store_explicit(device ulong * object, ulong desired);
+namespace MetalAtomic64
+{
+enum TypeID: ushort {
+  i64 = 0,
+  u64,
+  f64,
+  f59,
+  f43
+};
+
+extern void __atomic_store_explicit(threadgroup ulong * object, ulong desired);
+extern void __atomic_store_explicit(device ulong * object, ulong desired);
+} // namespace MetalAtomic64
 
 namespace MetalFloat64
 {
@@ -82,14 +93,14 @@ struct _valid_store_type<T, typename enable_if<_disjunction<
 template <typename T, typename U, typename _E = typename enable_if<_valid_store_type<threadgroup T *>::value && is_convertible<T, U>::value>::type>
 METAL_FUNC void atomic_store_explicit(volatile threadgroup _atomic<T> * object, U desired, memory_order order) METAL_CONST_ARG(order) METAL_VALID_STORE_ORDER(order)
 {
-  __metal_atomic64_store_explicit(
+  MetalAtomic64::__atomic_store_explicit(
     (threadgroup ulong*)&object->__s,
     as_type<ulong>(decltype(object->__s)(desired)));
 }
 template <typename T, typename U, typename _E = typename enable_if<_valid_store_type<device T *>::value && is_convertible<T, U>::value>::type>
 METAL_FUNC void atomic_store_explicit(volatile device _atomic<T> *object, U desired, memory_order order) METAL_CONST_ARG(order) METAL_VALID_STORE_ORDER(order)
 {
-  __metal_atomic64_store_explicit(
+  MetalAtomic64::__atomic_store_explicit(
     (device ulong*)&object->__s,
     as_type<ulong>(decltype(object->__s)(desired)));
 }
