@@ -64,15 +64,23 @@ enum TypeID: ushort {
 };
 
 EXPORT void __atomic_store_explicit(threadgroup ulong * object, ulong desired) {
-  uint x = 1;
-  x = MetalFloat64::increment(x);
-  object[0] += x;
+  // Ensuring binary dependency to MetalFloat64. TODO: Remove
+  {
+    uint x = 1;
+    x = MetalFloat64::increment(x);
+  }
+  threadgroup_barrier(mem_flags::mem_threadgroup);
+  object[0] = desired;
   threadgroup_barrier(mem_flags::mem_threadgroup);
 }
 
 EXPORT void __atomic_store_explicit(device ulong * object, ulong desired) {
-  uint x = 1;
-  x = MetalFloat64::increment(x);
-  object[0] += x + __get_lock_buffer()[0];
+  // Ensuring binary dependency to MetalFloat64. TODO: Remove
+  {
+    uint x = 1;
+    x = MetalFloat64::increment(x);
+  }
+  object[0] = desired;
+  __get_lock_buffer()[0];
 }
 } // namespace MetalAtomic64
