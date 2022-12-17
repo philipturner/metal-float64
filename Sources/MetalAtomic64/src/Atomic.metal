@@ -23,6 +23,9 @@ using namespace metal;
 
 // MARK: - Embedded Reference to Lock Buffer
 
+// Reference to existing impleentation:
+// https://github.com/kokkos/kokkos/blob/master/tpls/desul/include/desul/atomics/Lock_Array_HIP.hpp
+
 #if defined(METAL_ATOMIC64_PLACEHOLDER)
 static constant size_t lock_buffer_address = 0;
 #else

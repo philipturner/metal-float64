@@ -27,10 +27,6 @@ struct ValueConverter {
   }
 };
 
-// https://github.com/kokkos/kokkos/blob/master/tpls/desul/include/desul/atomics/Lock_Array_HIP.hpp
-
-// _ZZ24luma_log_sum_to_exposurePU9MTLdevicefRU11MTLconstantKjPU9MTLdeviceDhS4_RU9MTLdevicebttttE4sums
-
 ALWAYS_INLINE uint MetalFloat64::increment(uint x) {
   GlobalConstantValueWrapper originalWrapper{ &globalValue };
   ValueConverter converter{ &originalWrapper };
