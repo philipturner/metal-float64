@@ -49,7 +49,8 @@ fi
 cd "lib"
 
 # Fuse the headers into single file.
-swift "${SWIFT_PACKAGE_DIR}/build.swift" $PACKAGED_LIBRARY_DIR "--merge-headers"
+swift "${SWIFT_PACKAGE_DIR}/build.swift" $PACKAGED_LIBRARY_DIR \
+  "--merge-float64-headers"
 
 # Compile the library.
 # - Uses '-Os' to encourage force-noinlines to work correctly.
@@ -84,13 +85,11 @@ if [[ ! -e "../placeholders" ]]; then
 fi
 mv -f "libMetalAtomic64.metallib" "../placeholders/libMetalAtomic64.metallib"
 
-# Embed shader source into the Swift file, copy documentation to C header.
-# swift ...
-cp -r "${ATOMIC64_SOURCE_DIR}/include/MetalAtomic64" "../include/MetalAtomic64"
-
-# Encapsulate the directory that builds this, so we can delete the output
+# Encapsulate the directory that builds this, so we can delete any output
 # files we don't want.
 mkdir tmp && cd tmp
+swift "${SWIFT_PACKAGE_DIR}/build.swift" $PACKAGED_LIBRARY_DIR \
+  "--embed-atomic64-sources"
 swiftc \
   "${ATOMIC64_SOURCE_DIR}/src/GenerateLibrary.swift" \
   -Onone \

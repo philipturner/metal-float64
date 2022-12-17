@@ -18,14 +18,16 @@ guard CommandLine.arguments.count == 3 else {
 }
 
 switch CommandLine.arguments[2] {
-case "--merge-headers":
-  mergeHeaders()
+case "--merge-float64-headers":
+  mergeFloat64Headers()
+case "--embed-atomic64-sources":
+  embedAtomic64Sources()
 default:
   fatalError("Invalid task name.")
 }
 
 // Combine all sub-headers into a single-file header.
-func mergeHeaders() {
+func mergeFloat64Headers() {
   let currentPath = CommandLine.arguments[1]
   let headersDirectory = currentPath + "/include/MetalFloat64"
   
@@ -120,4 +122,10 @@ func mergeHeaders() {
   guard fm.createFile(atPath: libraryHeaderPath, contents: outputData) else {
     fatalError("Error overwriting file '\(libraryHeaderPath)'.")
   }
+}
+
+// Copy "Atomic.metal" into "GenerateLibrary.swift" and write the result to the
+// current directory.
+func embedAtomic64Sources() {
+  
 }

@@ -37,7 +37,7 @@ public func metal_atomic64_generate_library(
 }
 #endif
 
-// MARK: - Copy Documentation Here
+// NOTE: Ensure this documentation comment stays synchronized with the C header.
 
 /// Compile a 64-bit atomics library that embeds the lock buffer's GPU virtual
 /// address into the binary. This library eliminates the need to specify a lock
