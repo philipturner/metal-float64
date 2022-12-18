@@ -12,14 +12,15 @@ namespace MetalAtomic64
 {
 enum TypeID: ushort {
   i64 = 0,
-  u64,
-  f64,
-  f59,
-  f43
+  u64 = 1,
+  f64 = 2,
+  f59 = 3,
+  f43 = 4
 };
 
-extern void __atomic_store_explicit(threadgroup ulong * object, ulong desired);
-extern void __atomic_store_explicit(device ulong * object, ulong desired);
+extern void __atomic_store_explicit(threadgroup ulong* object, ulong desired);
+extern void __atomic_store_explicit(device ulong* object, ulong desired);
+extern void __atomic_fetch_add_explicit(device ulong* object, ulong operand, TypeID type);
 } // namespace MetalAtomic64
 
 namespace MetalFloat64

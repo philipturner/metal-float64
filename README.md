@@ -29,7 +29,7 @@ ls .build/MetalFloat64/usr/include
 # MetalFloat64.h
 ```
 
-TODO: Instructions for linking the library from command-line, and how to use when compiling sources at runtime
+TODO: Instructions for linking the library from command-line, and how to use when compiling sources at runtime. Make a CPU library for packaging the Float64 metallibs in SwiftPM and decoding reduced-precision types on the CPU.
 
 TODO: How to initialize the libMetalAtomic64.
 

@@ -10,32 +10,8 @@
 using namespace metal;
 using namespace MetalFloat64;
 
-constant size_t globalValue = 0;
-
-struct GlobalConstantValueWrapper {
-  constant size_t* originalAddress;
-};
-
-struct GlobalDeviceValueWrapper {
-  device size_t* finalAddress;
-};
-
-struct ValueConverter {
-  thread GlobalConstantValueWrapper* original;
-  thread GlobalDeviceValueWrapper* convert() {
-    return reinterpret_cast<thread GlobalDeviceValueWrapper*>(original);
-  }
-};
+// TODO: Remove this entire file.
 
 ALWAYS_INLINE uint MetalFloat64::increment(uint x) {
-  GlobalConstantValueWrapper originalWrapper{ &globalValue };
-  ValueConverter converter{ &originalWrapper };
-  thread GlobalDeviceValueWrapper* finalWrapper = converter.convert();
-  
-  device size_t* finalAddress = finalWrapper[0].finalAddress;
-  
-  finalAddress[0] += 5;
-  finalAddress[0] += 5;
-  
-  return x + finalAddress[0];
+  return x + 1;
 }
