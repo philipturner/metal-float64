@@ -42,6 +42,28 @@ using namespace metal;
 //                               HOST_SPACE_ATOMIC_XOR_MASK];
 //   }
 // };
+//
+// https://github.com/kokkos/kokkos/blob/master/tpls/desul/include/desul/atomics/Generic.hpp
+//
+////  This is a way to avoid dead lock in a warp or wave front
+// T return_val;
+// int done = 0;
+// #ifdef __HIPCC__
+// unsigned long long int active = DESUL_IMPL_BALLOT_MASK(1);
+// unsigned long long int done_active = 0;
+// while (active != done_active) {
+//   if (!done) {
+//     if (Impl::lock_address_hip((void*)dest, scope)) {
+//       atomic_thread_fence(MemoryOrderAcquire(), scope);
+//       return_val = op.apply(*dest, val);
+//       *dest = return_val;
+//       atomic_thread_fence(MemoryOrderRelease(), scope);
+//       Impl::unlock_address_hip((void*)dest, scope);
+//       done = 1;
+//     }
+//   }
+//   done_active = DESUL_IMPL_BALLOT_MASK(done);
+// }
 
 #if defined(METAL_ATOMIC64_PLACEHOLDER)
 static constant size_t lock_buffer_address = 0;
@@ -66,49 +88,59 @@ INTERNAL_INLINE device atomic_uint* __get_lock_buffer() {
 
 INTERNAL_INLINE device atomic_uint* get_lock(device ulong* object) {
   DeviceAddressWrapper wrapper{ (device atomic_uint*)object };
-  uint lower_bits = reinterpret_cast<thread uint2&>(wrapper)[0] >>= 3;
-  ushort hash = as_type<ushort2>(lower_bits)[0] & 0x5A39;
+  uint lower_bits = reinterpret_cast<thread uint2&>(wrapper)[0] >> 3;
+  ushort hash = as_type<ushort2>(lower_bits)[0] ^ 0x5A39;
   
   auto lock_ref = reinterpret_cast<constant LockBufferAddressWrapper&>
      (lock_buffer_address);
   return lock_ref.address + hash;
 }
 
-INTERNAL_INLINE void acquire_lock(device atomic_uint* lock) {
-  while (true) {
-    uint expected = 0;
-    uint desired = 1;
-    auto success = metal::atomic_compare_exchange_weak_explicit(
-      lock, &expected, desired, memory_order_relaxed, memory_order_relaxed);
-    if (success) {
-      break;
-    }
-  }
+INTERNAL_INLINE bool try_acquire_lock(device atomic_uint* lock) {
+  uint expected = 0;
+  uint desired = 1;
+  return metal::atomic_compare_exchange_weak_explicit(
+    lock, &expected, desired, memory_order_relaxed, memory_order_relaxed);
 }
 
-INTERNAL_INLINE void release_lock(device atomic_uint* lock) {
-  while (true) {
-    uint expected = 1;
-    uint desired = 0;
-    auto success = metal::atomic_compare_exchange_weak_explicit(
-      lock, &expected, desired, memory_order_relaxed, memory_order_relaxed);
-    if (success) {
-      break;
-    }
-    // The cmpxchg should never return false.
-    // TODO: Test whether it ever does, then switch to a faster atomic_store
-    // without a loop.
+// Right now, returns something nonzero if there's an error.
+INTERNAL_INLINE uint release_lock(device atomic_uint* lock) {
+  // TODO: Does atomic_store suffice instead?
+  // TODO: Test whether the current value is ever not 0.
+//  atomic_exchange_explicit(lock, 0, memory_order_relaxed);
+  
+  uint expected = 1;
+  uint desired = 0;
+  auto result = metal::atomic_compare_exchange_weak_explicit(
+    lock, &expected, desired, memory_order_relaxed, memory_order_relaxed);
+  if (result) {
+    return 0;
+  } else {
+    return 500;
   }
+//  while (true) {
+//    uint expected = 1;
+//    uint desired = 0;
+//    auto success = metal::atomic_compare_exchange_weak_explicit(
+//      lock, &expected, desired, memory_order_relaxed, memory_order_relaxed);
+//    if (success) {
+//      break;
+//    }
+//    // The cmpxchg should never return false.
+//    // TODO: Test whether it ever does, then switch to a faster atomic_store
+//    // without a loop.
+//  }
 }
 
 // The address should be aligned, so simply mask the address before reading.
-// That incurs (hopefully) one cycle overhead + register swaps, instead of
-// four cycles overhead + register swaps.
+// That incurs (hopefully) one cycle overhead + register swap, instead of four
+// cycles overhead + register swap. Not sure whether the increased register
+// pressure is a bad thing, or whether some of the reads even need to be atomic.
 INTERNAL_INLINE device atomic_uint* get_upper_address(device atomic_uint* lower) {
   DeviceAddressWrapper wrapper{ lower };
-  auto bits = reinterpret_cast<thread uint2&>(wrapper);
-  bits[0] &= 4;
-  return reinterpret_cast<thread DeviceAddressWrapper&>(bits).address;
+  auto lower_bits = reinterpret_cast<thread uint2&>(wrapper);
+  uint2 upper_bits{ lower_bits[0] | 4, lower_bits[1] };
+  return reinterpret_cast<thread DeviceAddressWrapper&>(upper_bits).address;
 }
 
 // Only call this while holding a lock.
@@ -119,19 +151,23 @@ INTERNAL_INLINE ulong memory_load(device atomic_uint* lower, device atomic_uint*
 }
 
 // Only call this while holding a lock.
-INTERNAL_INLINE void memory_store(device atomic_uint *lower, device atomic_uint* upper, ulong desired) {
+// Right now, returns something nonzero if there's an error.
+INTERNAL_INLINE uint memory_store(device atomic_uint *lower, device atomic_uint* upper, ulong desired) {
   uint in_lo = as_type<uint2>(desired)[0];
   uint in_hi = as_type<uint2>(desired)[1];
   metal::atomic_store_explicit(lower, in_lo, memory_order_relaxed);
   metal::atomic_store_explicit(upper, in_hi, memory_order_relaxed);
+  uint error = 0;
   
   // Validate that the written value reads what you expect.
   while (true) {
     if (desired == memory_load(lower, upper)) {
       break;
     }
+    error = 1;
     // TODO: Test how often the thread reads a value it didn't write.
   }
+  return error;
 }
 
 // MARK: - Implementation of Exposed Functions
@@ -166,12 +202,12 @@ enum TypeID: ushort {
 
 // Entering an invalid operation ID causes undefined behavior at runtime.
 enum OperationID: ushort {
-  store = 0,
-  load = 1,
-  xchg = 2,
-  logical_and = 3,
-  logical_or = 4,
-  logical_xor = 5
+  store = 0, // atomic_store_explicit
+  load = 1, // atomic_load_explicit
+  xchg = 2, // atomic_exchange_explicit
+  logical_and = 3, // atomic_fetch_and_explicit
+  logical_or = 4, // atomic_fetch_or_explicit
+  logical_xor = 5 // atomic_fetch_xor_explicit
 };
 
 // TODO: You can't just implement atomics through a threadgroup barrier. In
@@ -213,19 +249,33 @@ EXPORT void __atomic_store_explicit(device ulong* object, ulong desired) {
   __get_lock_buffer()[0];
 }
 
+// TODO: Transform this into a templated function.
 EXPORT ulong __atomic_fetch_add_explicit(device ulong* object, ulong operand, TypeID type) {
-//  object[0] += operand;
+  device atomic_uint* lock = get_lock(object);
+  auto lower_address = reinterpret_cast<device atomic_uint*>(object);
+  auto upper_address = get_upper_address(lower_address);
+  uint error = 0;
   
-  auto lock = get_lock(object);
-  acquire_lock(lock);
+  // Avoids deadlock when threads in the same simdgroup access the same memory
+  // location, during the same function call.
+  bool done = false;
+  simd_vote active = simd_active_threads_mask();
+  simd_vote done_active(0);
+  using vote_t = simd_vote::vote_t;
   
-  auto lower = reinterpret_cast<device atomic_uint*>(object);
-  auto upper = get_upper_address(lower);
-  ulong previous = memory_load(lower, upper);
-  ulong next = previous + operand;
-  memory_store(lower, upper, next);
+  while (vote_t(active) != vote_t(done_active)) {
+    if (!done) {
+      if (try_acquire_lock(lock)) {
+        ulong previous = memory_load(lower_address, upper_address);
+        ulong next = previous + operand;
+        error += memory_store(lower_address, upper_address, next);
+        error += release_lock(lock);
+        done = true;
+      }
+    }
+    done_active = simd_ballot(done);
+  }
   
-  release_lock(lock);
-  return next;
+  return error;
 }
 } // namespace MetalAtomic64

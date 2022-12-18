@@ -28,14 +28,15 @@ final class AtomicTests: XCTestCase {
   // is indepedent of the order of operands.
   func testAtomicOperations() throws {
     let device = Context.global.device
-    let bufferSize = Configuration.outBufferSize * 8
     #if os(macOS)
-    let outBuffer = device.makeBuffer(
-      length: bufferSize, options: .storageModeManaged)!
+    let bufferStorageMode: MTLResourceOptions = .storageModeManaged
     #else
-    let outBuffer = device.makeBuffer(
-      length: bufferSize, options: .storageModeShared)!
+    let bufferStorageMode: MTLResourceOptions = .storageModeShared
     #endif
+    let outBuffer = device.makeBuffer(
+      length: Configuration.outBufferSize * 8, options: bufferStorageMode)!
+    let errorsBuffer = device.makeBuffer(
+      length: Configuration.numThreads * 8, options: bufferStorageMode)!
     let randomData = generateRandomData()
     
     func testAtomicOperation<T: Numeric>(
@@ -45,19 +46,30 @@ final class AtomicTests: XCTestCase {
     ) {
       var _commandBuffer: MTLCommandBuffer?
       Context.global.withCommandBuffer(synchronized: false) { commandBuffer in
+        let blitEncoder1 = commandBuffer.makeBlitCommandEncoder()!
+        blitEncoder1.synchronize(resource: randomData)
+        blitEncoder1.synchronize(resource: outBuffer)
+        blitEncoder1.endEncoding()
+        
         let encoder = commandBuffer.makeComputeCommandEncoder()!
         let pipeline = Context.global.pipelines[pipeline]!
         encoder.setComputePipelineState(pipeline)
+        encoder.useResource(Context.global.lock_buffer, usage: [.read, .write])
         
         var _numItemsPerThread: UInt32 = .init(Configuration.itemsPerThread)
         encoder.setBytes(&_numItemsPerThread, length: 4, index: 0)
         encoder.setBuffer(randomData, offset: 0, index: 1)
         encoder.setBuffer(outBuffer, offset: 0, index: 2)
+        encoder.setBuffer(errorsBuffer, offset: 0, index: 3)
         encoder.dispatchThreads(
-          MTLSizeMake(1, 1, 1)
-//          MTLSizeMake(Configuration.numThreads, 1, 1),
+          MTLSizeMake(Configuration.numThreads, 1, 1),
           threadsPerThreadgroup: MTLSizeMake(1, 1, 1))
         encoder.endEncoding()
+        
+        let blitEncoder2 = commandBuffer.makeBlitCommandEncoder()!
+        blitEncoder2.synchronize(resource: randomData)
+        blitEncoder2.synchronize(resource: outBuffer)
+        blitEncoder2.endEncoding()
         
         _commandBuffer = commandBuffer
       }
@@ -65,7 +77,22 @@ final class AtomicTests: XCTestCase {
       let expected = generateExpectedResults(
         randomData: randomData, nextPartialResult)
       _commandBuffer!.waitUntilCompleted()
-      validateResults(expected: expected, actual: outBuffer)
+      print("Cmdbuf time: \((_commandBuffer!.gpuEndTime - _commandBuffer!.gpuStartTime) * 1e6)")
+      validateResults(
+        randomData: randomData, expected: expected, actual: outBuffer)
+      
+      let errors = errorsBuffer.contents().assumingMemoryBound(to: UInt64.self)
+      var firstErrorIndex = -1
+      var firstError = 0
+      for i in 0..<Configuration.numThreads {
+        if errors[i] != 0 {
+          firstErrorIndex = i
+          break
+        }
+      }
+      if firstErrorIndex != -1 {
+        XCTAssert(false, "Thread \(firstErrorIndex) produced error code \(firstError).")
+      }
     }
     
     testAtomicOperation(type: UInt64.self, "testAtomicAdd") {
@@ -82,9 +109,9 @@ private struct RandomData {
 // TODO: Bump this up to 10,000 threads/10,000 buffer size.
 private struct Configuration {
   static let itemsPerThread: Int = 10
-  static let numThreads: Int = 100
+  static let numThreads: Int = 10000
   static var numItems: Int { itemsPerThread * numThreads }
-  static let outBufferSize: Int = 100
+  static let outBufferSize: Int = 2007
 }
 
 
@@ -138,10 +165,12 @@ private func generateExpectedResults<T: Numeric>(
   return output
 }
 
-func validateResults<T: Numeric>(
+private func validateResults<T: Numeric>(
+  randomData: MTLBuffer,
   expected: [T],
   actual: MTLBuffer
 ) {
+  let _randomData = randomData.contents().assumingMemoryBound(to: RandomData.self)
   let actualContents = actual.contents().assumingMemoryBound(to: T.self)
   
   var firstFailure: Int = -1
@@ -159,8 +188,6 @@ func validateResults<T: Numeric>(
   }
   let lhs = expected[firstFailure]
   let rhs = actualContents[firstFailure]
-  
-  
   XCTAssert(false, """
     Item \(firstFailure) was the first item with unexpected results.
     \(lhs) != \(rhs)

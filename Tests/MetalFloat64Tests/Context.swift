@@ -20,7 +20,7 @@ struct Context {
   
   private var float64_library: MTLDynamicLibrary
   private var atomic64_library: MTLDynamicLibrary
-  private var lock_buffer: MTLBuffer
+  var lock_buffer: MTLBuffer
   
   init() {
     self.device = MTLCreateSystemDefaultDevice()!
