@@ -20,7 +20,7 @@ enum TypeID: ushort {
 
 extern void __atomic_store_explicit(threadgroup ulong* object, ulong desired);
 extern void __atomic_store_explicit(device ulong* object, ulong desired);
-extern void __atomic_fetch_add_explicit(device ulong* object, ulong operand, TypeID type);
+extern ulong __atomic_fetch_add_explicit(device ulong* object, ulong operand, TypeID type);
 } // namespace MetalAtomic64
 
 namespace MetalFloat64

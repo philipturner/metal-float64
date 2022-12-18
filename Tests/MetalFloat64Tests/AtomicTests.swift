@@ -54,7 +54,8 @@ final class AtomicTests: XCTestCase {
         encoder.setBuffer(randomData, offset: 0, index: 1)
         encoder.setBuffer(outBuffer, offset: 0, index: 2)
         encoder.dispatchThreads(
-          MTLSizeMake(Configuration.numThreads, 1, 1),
+          MTLSizeMake(1, 1, 1)
+//          MTLSizeMake(Configuration.numThreads, 1, 1),
           threadsPerThreadgroup: MTLSizeMake(1, 1, 1))
         encoder.endEncoding()
         

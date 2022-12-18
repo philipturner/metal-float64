@@ -40,7 +40,7 @@ kernel void testAtomicAdd(
   for (uint i = 0; i < itemsPerThread; ++i) {
     auto this_data = randomData[randomDataAddr + i];
 //    outBuffer[this_data.index] += this_data.value;
-   __atomic_fetch_add_explicit(
+    [[maybe_unused]] auto sum = __atomic_fetch_add_explicit(
      outBuffer + this_data.index, this_data.value, u64);
   }
 }

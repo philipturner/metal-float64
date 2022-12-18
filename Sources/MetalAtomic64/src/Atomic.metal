@@ -25,7 +25,7 @@ using namespace metal;
 // MARK: - Embedded Reference to Lock Buffer
 
 // Reference to existing implementation:
-// https://github.com/kokkos/kokkos/blob/master/tpls/desul/include/desul/atomics/Lock_Array_HIP.hpp
+// https://github.com/kokkos/kokkos/blob/master/tpls/desul/include/desul/atomics/Lock_Array.hpp
 //
 // namespace desul {
 // namespace Impl {
@@ -111,14 +111,28 @@ INTERNAL_INLINE device atomic_uint* get_upper_address(device atomic_uint* lower)
   return reinterpret_cast<thread DeviceAddressWrapper&>(bits).address;
 }
 
-INTERNAL_INLINE ulong atomic_load(device atomic_uint* lower, device atomic_uint* upper) {
+// Only call this while holding a lock.
+INTERNAL_INLINE ulong memory_load(device atomic_uint* lower, device atomic_uint* upper) {
   uint out_lo = metal::atomic_load_explicit(lower, memory_order_relaxed);
   uint out_hi = metal::atomic_load_explicit(upper, memory_order_relaxed);
   return as_type<ulong>(uint2(out_lo, out_hi));
 }
 
-// TODO: Test how often the thread reads a value it didn't write.
-// atomic_store
+// Only call this while holding a lock.
+INTERNAL_INLINE void memory_store(device atomic_uint *lower, device atomic_uint* upper, ulong desired) {
+  uint in_lo = as_type<uint2>(desired)[0];
+  uint in_hi = as_type<uint2>(desired)[1];
+  metal::atomic_store_explicit(lower, in_lo, memory_order_relaxed);
+  metal::atomic_store_explicit(upper, in_hi, memory_order_relaxed);
+  
+  // Validate that the written value reads what you expect.
+  while (true) {
+    if (desired == memory_load(lower, upper)) {
+      break;
+    }
+    // TODO: Test how often the thread reads a value it didn't write.
+  }
+}
 
 // MARK: - Implementation of Exposed Functions
 
@@ -160,6 +174,24 @@ enum OperationID: ushort {
   logical_xor = 5
 };
 
+// TODO: You can't just implement atomics through a threadgroup barrier. In
+// between the barrier, two threads could still write to the same address.
+// Solution: an __extremely__ slow workaround that takes the threadgroup memory
+// pointer (presumably 32 bits), hashes both the upper and lower 16 bits, then
+// uses the device lock buffer to synchronize.
+//
+// Alternatively, find some neat hack with bank conflicts that's inherently
+// atomic. Perhaps stagger operations based on thread ID. We can also access
+// the `SReg32` on Apple GPUs, which stores the thread's index in the
+// threadgroup: https://github.com/dougallj/applegpu/blob/main/applegpu.py. Or,
+// include the threadgroup's ID in the hash, minimizing conflicts over a common
+// lock between threadgroups.
+//
+// It the threadgroup memory pointer size is truly indecipherable, and/or varies
+// between Apple and AMD, try the following. Allocate 64 bits of register or
+// stack memory. Write the threadgroup pointer to its base. Hash all 64 bits.
+// As an optimization, also function-call into pre-compiled AIR code that
+// fetches the threadgroup ID from an SReg32.
 EXPORT void __atomic_store_explicit(threadgroup ulong* object, ulong desired) {
   // Ensuring binary dependency to MetalFloat64. TODO: Remove
   {
@@ -181,8 +213,19 @@ EXPORT void __atomic_store_explicit(device ulong* object, ulong desired) {
   __get_lock_buffer()[0];
 }
 
-EXPORT void __atomic_fetch_add_explicit(device ulong* object, ulong operand, TypeID type) {
-  // TODO: Actually synchronize based on the lock
-  object[0] += operand;
+EXPORT ulong __atomic_fetch_add_explicit(device ulong* object, ulong operand, TypeID type) {
+//  object[0] += operand;
+  
+  auto lock = get_lock(object);
+  acquire_lock(lock);
+  
+  auto lower = reinterpret_cast<device atomic_uint*>(object);
+  auto upper = get_upper_address(lower);
+  ulong previous = memory_load(lower, upper);
+  ulong next = previous + operand;
+  memory_store(lower, upper, next);
+  
+  release_lock(lock);
+  return next;
 }
 } // namespace MetalAtomic64
