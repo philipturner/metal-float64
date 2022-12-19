@@ -199,11 +199,12 @@ enum OperationID: ushort {
 // include the threadgroup's ID in the hash, minimizing conflicts over a common
 // lock between threadgroups.
 //
-// It the threadgroup memory pointer size is truly indecipherable, and/or varies
+// If the threadgroup memory pointer size is truly indecipherable, and/or varies
 // between Apple and AMD, try the following. Allocate 64 bits of register or
 // stack memory. Write the threadgroup pointer to its base. Hash all 64 bits.
 // As an optimization, also function-call into pre-compiled AIR code that
-// fetches the threadgroup ID from an SReg32.
+// fetches the threadgroup ID from an SReg32. Incorporate that into the hash
+// too.
 EXPORT void __atomic_store_explicit(threadgroup ulong* object, ulong desired) {
   // Ensuring binary dependency to MetalFloat64. TODO: Remove
   {
@@ -233,7 +234,7 @@ EXPORT ulong __atomic_fetch_add_explicit(device ulong* object, ulong operand, Ty
   auto upper_address = get_upper_address(lower_address);
   ulong output;
   
-  // Avoids deadlock when threads in the same simdgroup access the same memory
+  // Avoids a deadlock when threads in the same simdgroup access the same memory
   // location, during the same function call.
   bool done = false;
   simd_vote active = simd_active_threads_mask();
