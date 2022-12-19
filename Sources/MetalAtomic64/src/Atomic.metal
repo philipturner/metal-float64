@@ -129,7 +129,6 @@ INTERNAL_INLINE ulong memory_load(device atomic_uint* lower, device atomic_uint*
 }
 
 // Only call this while holding a lock.
-// Right now, returns something nonzero if there's an error.
 INTERNAL_INLINE void memory_store(device atomic_uint *lower, device atomic_uint* upper, ulong desired) {
   uint in_lo = as_type<uint2>(desired)[0];
   uint in_hi = as_type<uint2>(desired)[1];

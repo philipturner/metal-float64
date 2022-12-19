@@ -230,7 +230,7 @@ INTERNAL_INLINE void release_lock(device atomic_uint* lock) {
 // The address should be aligned, so simply mask the address before reading.
 // That incurs (hopefully) one cycle overhead + register swap, instead of four
 // cycles overhead + register swap. Not sure whether the increased register
-// pressure is a bad thing, or whether some of the reads even need to be atomic.
+// pressure is a bad thing.
 INTERNAL_INLINE device atomic_uint* get_upper_address(device atomic_uint* lower) {
   DeviceAddressWrapper wrapper{ lower };
   auto lower_bits = reinterpret_cast<thread uint2&>(wrapper);
