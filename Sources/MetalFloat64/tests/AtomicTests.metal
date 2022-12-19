@@ -44,13 +44,8 @@ kernel void testAtomicAdd(
   uint randomDataAddr = tid * itemsPerThread;
   for (uint i = 0; i < itemsPerThread; ++i) {
     auto this_data = randomData[randomDataAddr + i];
-//    outBuffer[this_data.index] += this_data.value;
-    [[maybe_unused]] ulong error = __atomic_fetch_add_explicit(
+    __atomic_fetch_add_explicit(
      outBuffer + this_data.index, this_data.value, u64);
-    
-    if (error > 0) {
-      errors[tid] = randomDataAddr * 100000 + error;
-    }
-//    outBuffer[0] = sum;
+//    atomic_fetch_add_explicit((device atomic_uint*)(outBuffer + this_data.index), this_data.value, memory_order_relaxed);
   }
 }

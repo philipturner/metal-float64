@@ -84,20 +84,25 @@ public func metal_atomic64_generate_library(
   // Fetch the float64 library's Metal device.
   let device = float64_library.device
   
-  // TODO: Align the address to 65536 words, so that shaders only need to mask
-  // the lower 18 bits when hashing.
-  let lockBufferLength = 65536 * MemoryLayout<UInt32>.stride
+  // Actual buffer size is twice this, for reasons explained below.
+  let lockBufferSize = 1 << 16 * MemoryLayout<UInt32>.stride
   let bufferStorageMode = device.hasUnifiedMemory
     ? MTLResourceOptions.storageModeShared : .storageModePrivate
   let lockBuffer = device.makeBuffer(
-    length: lockBufferLength, options: bufferStorageMode)!
-  let lockBufferAddress = NSNumber(value: lockBuffer.gpuAddress)
+    length: 2 * lockBufferSize, options: bufferStorageMode)!
+  
+  // Align the base address so its lower bits are all zero. That way, shaders
+  // only need to mask the lower bits with the hash. This saves ~3 cycles of
+  // ALU time.
+  var lockBufferAddress = lockBuffer.gpuAddress
+  let sizeMinus1 = UInt64(lockBufferSize - 1)
+  lockBufferAddress = ~sizeMinus1 & (lockBufferAddress + sizeMinus1)
   
   let options = MTLCompileOptions()
   options.libraries = [float64_library]
   options.optimizationLevel = .size
   options.preprocessorMacros = [
-    "METAL_ATOMIC64_LOCK_BUFFER_ADDRESS": lockBufferAddress
+    "METAL_ATOMIC64_LOCK_BUFFER_ADDRESS": NSNumber(value: lockBufferAddress)
   ]
   options.libraryType = .dynamic
   options.installName = "@loader_path/libMetalAtomic64.metallib"
@@ -198,14 +203,17 @@ INTERNAL_INLINE device atomic_uint* __get_lock_buffer() {
   return const_ref.address;
 };
 
+// This assumes the object is aligned to 8 bytes (the address's lower 3 bits
+// are all zeroes). Otherwise, behavior is undefined.
 INTERNAL_INLINE device atomic_uint* get_lock(device ulong* object) {
   DeviceAddressWrapper wrapper{ (device atomic_uint*)object };
-  uint lower_bits = reinterpret_cast<thread uint2&>(wrapper)[0] >> 3;
-  ushort hash = as_type<ushort2>(lower_bits)[0] ^ 0x5A39;
+  uint lower_bits = reinterpret_cast<thread uint2&>(wrapper)[0];
+  uint hash = extract_bits(lower_bits, 1, 18) ^ (0x5A39 << 2);
   
-  auto lock_ref = reinterpret_cast<constant LockBufferAddressWrapper&>
-     (lock_buffer_address);
-  return lock_ref.address + hash;
+  auto this_address = lock_buffer_address | hash;
+  auto lock_ref = reinterpret_cast<thread LockBufferAddressWrapper&>
+     (this_address);
+  return lock_ref.address;
 }
 
 INTERNAL_INLINE bool try_acquire_lock(device atomic_uint* lock) {
@@ -215,33 +223,8 @@ INTERNAL_INLINE bool try_acquire_lock(device atomic_uint* lock) {
     lock, &expected, desired, memory_order_relaxed, memory_order_relaxed);
 }
 
-// Right now, returns something nonzero if there's an error.
-INTERNAL_INLINE uint release_lock(device atomic_uint* lock) {
-  // TODO: Does atomic_store suffice instead?
-  // TODO: Test whether the current value is ever not 0.
-//  atomic_exchange_explicit(lock, 0, memory_order_relaxed);
-  
-  uint expected = 1;
-  uint desired = 0;
-  auto result = metal::atomic_compare_exchange_weak_explicit(
-    lock, &expected, desired, memory_order_relaxed, memory_order_relaxed);
-  if (result) {
-    return 0;
-  } else {
-    return 500;
-  }
-//  while (true) {
-//    uint expected = 1;
-//    uint desired = 0;
-//    auto success = metal::atomic_compare_exchange_weak_explicit(
-//      lock, &expected, desired, memory_order_relaxed, memory_order_relaxed);
-//    if (success) {
-//      break;
-//    }
-//    // The cmpxchg should never return false.
-//    // TODO: Test whether it ever does, then switch to a faster atomic_store
-//    // without a loop.
-//  }
+INTERNAL_INLINE void release_lock(device atomic_uint* lock) {
+  atomic_store_explicit(lock, 0, memory_order_relaxed);
 }
 
 // The address should be aligned, so simply mask the address before reading.
@@ -264,22 +247,21 @@ INTERNAL_INLINE ulong memory_load(device atomic_uint* lower, device atomic_uint*
 
 // Only call this while holding a lock.
 // Right now, returns something nonzero if there's an error.
-INTERNAL_INLINE uint memory_store(device atomic_uint *lower, device atomic_uint* upper, ulong desired) {
+INTERNAL_INLINE void memory_store(device atomic_uint *lower, device atomic_uint* upper, ulong desired) {
   uint in_lo = as_type<uint2>(desired)[0];
   uint in_hi = as_type<uint2>(desired)[1];
   metal::atomic_store_explicit(lower, in_lo, memory_order_relaxed);
   metal::atomic_store_explicit(upper, in_hi, memory_order_relaxed);
-  uint error = 0;
   
   // Validate that the written value reads what you expect.
   while (true) {
     if (desired == memory_load(lower, upper)) {
       break;
+    } else {
+      // This branch never happens, but it's necessary to prevent some kind of
+      // compiler or runtime optimization.
     }
-    error = 1;
-    // TODO: Test how often the thread reads a value it didn't write.
   }
-  return error;
 }
 
 // MARK: - Implementation of Exposed Functions
@@ -357,8 +339,9 @@ EXPORT void __atomic_store_explicit(device ulong* object, ulong desired) {
     uint x = 1;
     x = MetalFloat64::increment(x);
   }
+  // acquire lock
   object[0] = desired;
-  __get_lock_buffer()[0];
+  // release lock
 }
 
 // TODO: Transform this into a templated function.
@@ -366,7 +349,7 @@ EXPORT ulong __atomic_fetch_add_explicit(device ulong* object, ulong operand, Ty
   device atomic_uint* lock = get_lock(object);
   auto lower_address = reinterpret_cast<device atomic_uint*>(object);
   auto upper_address = get_upper_address(lower_address);
-  uint error = 0;
+  ulong output;
   
   // Avoids deadlock when threads in the same simdgroup access the same memory
   // location, during the same function call.
@@ -379,16 +362,15 @@ EXPORT ulong __atomic_fetch_add_explicit(device ulong* object, ulong operand, Ty
     if (!done) {
       if (try_acquire_lock(lock)) {
         ulong previous = memory_load(lower_address, upper_address);
-        ulong next = previous + operand;
-        error += memory_store(lower_address, upper_address, next);
-        error += release_lock(lock);
+        output = previous + operand;
+        memory_store(lower_address, upper_address, output);
+        release_lock(lock);
         done = true;
       }
     }
     done_active = simd_ballot(done);
   }
-  
-  return error;
+  return output;
 }
 } // namespace MetalAtomic64
 

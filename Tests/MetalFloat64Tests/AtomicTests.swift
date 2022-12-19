@@ -37,7 +37,8 @@ final class AtomicTests: XCTestCase {
       length: Configuration.outBufferSize * 8, options: bufferStorageMode)!
     let errorsBuffer = device.makeBuffer(
       length: Configuration.numThreads * 8, options: bufferStorageMode)!
-    let randomData = generateRandomData()
+    let randomData = generateScatteredData()
+//    let randomData = generateCoalescedData()
     
     func testAtomicOperation<T: Numeric>(
       type: T.Type,
@@ -83,10 +84,11 @@ final class AtomicTests: XCTestCase {
       
       let errors = errorsBuffer.contents().assumingMemoryBound(to: UInt64.self)
       var firstErrorIndex = -1
-      var firstError = 0
+      var firstError: UInt64 = 0
       for i in 0..<Configuration.numThreads {
         if errors[i] != 0 {
           firstErrorIndex = i
+          firstError = errors[i]
           break
         }
       }
@@ -95,6 +97,7 @@ final class AtomicTests: XCTestCase {
       }
     }
     
+    // TODO: Repeat this test with different variations of configuration.
     testAtomicOperation(type: UInt64.self, "testAtomicAdd") {
       $0 + $1
     }
@@ -106,22 +109,38 @@ private struct RandomData {
   var value: UInt64
 }
 
-// TODO: Bump this up to 10,000 threads/10,000 buffer size.
+// If numThreads is 100_000 (1_000_000 operations):
+// Machine: M1 Max (32-core, 404 GB/s)
+// Bytes potentially transferred/item (32-bit): 24
+// Bytes potentially transferred/item (64-bit): 52
+// Atomic instructions/op (32-bit): 1
+// Atomic instructions/op (64-bit): 8
+// 32-bit coalesced:  243 us -> 4.12 GOP/s, 4.12 GIPS, 99 GB/s
+// 32-bit scattered:  419 us -> 2.39 GOP/s, 2.39 GIPS, 57 GB/s
+// 64-bit coalesced:  824 us -> 1.21 GOP/s, 9.71 GIPS, 63 GB/s
+// 64-bit scattered: 2075 us -> 0.48 GOP/s, 3.86 GIPS, 25 GB/s
+//
+// Perhaps we'd get more GB/s for 32-bit, if there were less items/thread,
+// maybe even 1 item/thread. The benchmarks will be run one more time, using
+// that idea.
+//
+// 32-bit coalesced:  139 us -> 7.19 GOP/s,  7.19 GIPS, 173 GB/s
+// 32-bit scattered:  385 us -> 2.60 GOP/s,  2.60 GIPS,  62 GB/s
+// 64-bit coalesced:  678 us -> 1.47 GOP/s, 11.80 GIPS,  77 GB/s
+// 64-bit scattered: 2291 us -> 0.44 GOP/s,  3.49 GIPS,  23 GB/s
+// 173 GB/s out of 404 GB/s - that's more like it! 64-bit atomics also performed
+// better, at ??? GB/s. The gap between 32-bit and 64-bit has widened from ~50%
+// to ~120% in bandwidth utilization. 64-bit is about the same as 32-bit with
+// scattered reads.
+
 private struct Configuration {
   static let itemsPerThread: Int = 10
-  static let numThreads: Int = 10000
+  static let numThreads: Int = 10_000
   static var numItems: Int { itemsPerThread * numThreads }
-  static let outBufferSize: Int = 2007
+  static let outBufferSize: Int = 65536 // 60070
 }
 
-
-// From https://stackoverflow.com/a/71490330:
-private struct RandomNumberGeneratorWithSeed: RandomNumberGenerator {
-    init(seed: Int) { srand48(seed) }
-    func next() -> UInt64 { return UInt64(drand48() * Double(UInt64.max)) }
-}
-
-private func generateRandomData() -> MTLBuffer {
+private func generateScatteredData() -> MTLBuffer {
   let device = Context.global.device
   let bufferSize = Configuration.numItems * MemoryLayout<RandomData>.stride
   #if os(macOS)
@@ -134,14 +153,96 @@ private func generateRandomData() -> MTLBuffer {
   
   let bufferContents = buffer.contents()
     .assumingMemoryBound(to: RandomData.self)
-  var generator = RandomNumberGeneratorWithSeed(seed: 42)
   for i in 0..<Configuration.numItems {
-    let index = UInt32.random(
-      in: 0..<UInt32(Configuration.outBufferSize), using: &generator)
-    let value = UInt64.random(
-      in: 0..<UInt64(1 << 50), using: &generator)
+    let index = UInt32.random(in: 0..<UInt32(Configuration.outBufferSize))
+    let value = UInt64.random(in: 0..<UInt64(1 << 22))
     bufferContents[i] = RandomData(index: index, value: value)
   }
+  return buffer
+}
+
+// Generates memory addresses in a way that minimizes lock contention.
+private func generateCoalescedData() -> MTLBuffer {
+  let device = Context.global.device
+  let bufferSize = Configuration.numItems * MemoryLayout<RandomData>.stride
+  #if os(macOS)
+  let buffer = device.makeBuffer(
+    length: bufferSize, options: .storageModeManaged)!
+  #else
+  let buffer = device.makeBuffer(
+    length: bufferSize, options: .storageModeShared)!
+  #endif
+  
+  let bufferContents = buffer.contents()
+    .assumingMemoryBound(to: RandomData.self)
+  
+  // Take random samples to ensure everything's going correctly.
+  var threadsWithIndex0 = 0
+  var threadsWithIndex37 = 0
+  var threadsWithIndex101 = 0
+  
+  // Simdgroup size is 64 on AMD.
+  let gpuName = MTLCreateSystemDefaultDevice()!.name
+  var executionWidth = 32
+  if gpuName.contains("AMD") || gpuName.contains("RX") || gpuName.contains("Radeon") {
+    executionWidth = 64
+  }
+  
+  // Everything is staggered in multiples of `itemsPerThread`.
+  // Divide chunks among simdgroups, then redistribute work within simdgroups.
+  let chunkSize = Configuration.itemsPerThread * executionWidth
+  for i in 0..<Configuration.numItems {
+    let chunkID = i / chunkSize
+    let idInChunk = i % chunkSize
+    let chunkBaseIndex = chunkID * chunkSize
+    
+    // The first thread's list of indices would be:
+    // [0 (i =  0), 32 (i =  1), 64 (i =  2), ...]
+    // The second thread's list of indices would be:
+    // [1 (i = 10), 33 (i = 11), 65 (i = 12), ...]
+    // The last thread's list of indices would be:
+    // [31 (i = 310), 63 (i = 311), ...]
+    
+    let firstListElement = idInChunk / Configuration.itemsPerThread
+    let listStride = executionWidth
+    let newIDInChunk = firstListElement +
+      (idInChunk % Configuration.itemsPerThread) * listStride;
+    let newI = newIDInChunk + chunkBaseIndex
+    
+    if newIDInChunk == 0 {
+      threadsWithIndex0 += 1
+    } else if newIDInChunk == 37 {
+      threadsWithIndex37 += 1
+    } else if newIDInChunk == 101 {
+      threadsWithIndex101 += 1
+    }
+    
+    precondition(newIDInChunk < chunkSize && newIDInChunk >= 0)
+    let wrappedI = UInt32(newI % Configuration.outBufferSize)
+    
+    _ = UInt32.random(in: 0..<UInt32(Configuration.outBufferSize))
+    let value = UInt64.random(in: 0..<UInt64(1 << 22))
+    bufferContents[i] = RandomData(index: wrappedI, value: value)
+  }
+  
+  // Check that the number distribution is as expected.
+  let numChunksMinimum = Configuration.numItems / chunkSize
+  let acceptedRange = (numChunksMinimum / 2)...(numChunksMinimum * 3 / 2)
+  precondition(numChunksMinimum >= 20)
+  guard acceptedRange.contains(threadsWithIndex0) else {
+    fatalError("Something went wrong (0)")
+  }
+  if chunkSize >= 37 {
+    guard acceptedRange.contains(threadsWithIndex37) else {
+      fatalError("Something went wrong (37)")
+    }
+  }
+  if chunkSize >= 101 {
+    guard acceptedRange.contains(threadsWithIndex101) else {
+      fatalError("Something went wrong (101)")
+    }
+  }
+
   return buffer
 }
 
@@ -170,7 +271,6 @@ private func validateResults<T: Numeric>(
   expected: [T],
   actual: MTLBuffer
 ) {
-  let _randomData = randomData.contents().assumingMemoryBound(to: RandomData.self)
   let actualContents = actual.contents().assumingMemoryBound(to: T.self)
   
   var firstFailure: Int = -1
@@ -184,6 +284,7 @@ private func validateResults<T: Numeric>(
   }
   
   if succeeded {
+    print("Operation succeeded!")
     return
   }
   let lhs = expected[firstFailure]
