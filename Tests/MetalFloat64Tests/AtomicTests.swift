@@ -110,7 +110,7 @@ private struct RandomData {
 }
 
 // If numThreads is 100_000 (1_000_000 operations):
-// Machine: M1 Max (32-core, 404 GB/s)
+// Machine: M1 Max (32-core, 408 GB/s)
 // Bytes potentially transferred/item (32-bit): 24
 // Bytes potentially transferred/item (64-bit): 52
 // Atomic instructions/op (32-bit): 1
