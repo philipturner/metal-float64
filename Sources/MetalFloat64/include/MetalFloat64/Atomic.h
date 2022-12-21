@@ -124,16 +124,17 @@ MAKE_METAL_BASE(int);
 MAKE_METAL_BASE(uint);
 MAKE_METAL_BASE(float);
 
-#undef MAKE_METAL_BASE
-
 #define MAKE_METAL_FLOAT64_BASE(T) \
 template <> \
 struct __atomic_base<T> { \
   using actual_atomic = MetalFloat64::atomic<T>; \
 }; \
 
-
+#undef MAKE_METAL_FLOAT64_BASE
+#undef MAKE_METAL_BASE
 } // namespace
+
+// TODO: __metal_float64_common_atomic
 
 } // namespace MetalFloat64
 

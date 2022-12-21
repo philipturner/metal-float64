@@ -24,8 +24,9 @@ inline void test_double_redefinition() {
   MetalFloat64::vec<double, 4> dvar8;
   vec<double, 5> dvar9;
   
-  dvar2.xy;
-  dvar3.bgr;
+  dvar2.xy = dvar3.yx;
+  dvar3.bgr = dvar3.bgr;
+  // TODO: Mirror the `float` 4-wide swizzle assignment.
   
   float fvar1;
   float2 fvar2;
@@ -37,22 +38,8 @@ inline void test_double_redefinition() {
   vec<float, 4> fvar8;
   vec<float, 5> fvar9;
   
-  fvar2.xy;
-  fvar3.bgr;
-  fvar2.xyxx;
+  fvar2.xy = fvar3.yx;
+  fvar3.bgr = fvar3.bgr;
+  fvar4.xywz = fvar2.xxyx;
 #pragma clang diagnostic pop
 }
-
-// Reference function
-//kernel void testFunctionCallOverhead
-// ( // This parenthesis trick bypasses Xcode's auto-indentation.
-//  device TEST_TYPE *input [[buffer(0)]],
-//  device int *output [[buffer(1)]],
-//  device int *num_bytes [[buffer(2)]],
-//  device int *increment_amount [[buffer(3)]],
-//  uint tid [[thread_position_in_grid]])
-//{
-//  output[tid] = _testFunctionCallOverhead<TEST_TYPE, TEST_INCREMENT>
-//   (
-//    input, num_bytes, increment_amount);
-//}

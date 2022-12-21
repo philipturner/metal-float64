@@ -78,7 +78,7 @@ final class AtomicTests: XCTestCase {
       let expected = generateExpectedResults(
         randomData: randomData, nextPartialResult)
       _commandBuffer!.waitUntilCompleted()
-      print("Cmdbuf time: \((_commandBuffer!.gpuEndTime - _commandBuffer!.gpuStartTime) * 1e6)")
+//      print("Cmdbuf time: \((_commandBuffer!.gpuEndTime - _commandBuffer!.gpuStartTime) * 1e6)")
       validateResults(
         randomData: randomData, expected: expected, actual: outBuffer)
       
@@ -284,7 +284,7 @@ private func validateResults<T: Numeric>(
   }
   
   if succeeded {
-    print("Operation succeeded!")
+//    print("Operation succeeded!")
     return
   }
   let lhs = expected[firstFailure]

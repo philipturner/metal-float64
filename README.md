@@ -29,7 +29,7 @@ ls .build/MetalFloat64/usr/include
 # MetalFloat64.h
 ```
 
-TODO: Instructions for linking the library from command-line, and how to use when compiling sources at runtime. Make a CPU library for packaging the Float64 metallibs in SwiftPM and decoding reduced-precision types on the CPU.
+TODO: Instructions for linking the library from command-line, and how to use when compiling sources at runtime. Make a CPU library for packaging the Float64 metallibs in SwiftPM and decoding reduced-precision types on the CPU. Set the call stack depth in your compute pipelines to X amount.
 
 TODO: How to initialize the libMetalAtomic64. Warn that you must call `useResource(_:usage:)` on the lock buffer, otherwise half of the GPU will freeze and (a) force the user to restart their computer or (b) silently consume 1/2 the GPU's maximum TDP in the background until a restart.
 
