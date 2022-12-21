@@ -8,9 +8,7 @@
 
 // Actual functions exposed by the header.
 
-namespace MetalAtomic64
-{
-enum TypeID: ushort {
+enum __metal_atomic64_type_id: ushort {
   i64 = 0,
   u64 = 1,
   f64 = 2,
@@ -18,19 +16,18 @@ enum TypeID: ushort {
   f43 = 4
 };
 
-extern void __atomic_store_explicit(threadgroup ulong* object, ulong desired);
-extern void __atomic_store_explicit(device ulong* object, ulong desired);
-extern ulong __atomic_fetch_add_explicit(device ulong* object, ulong operand, TypeID type);
-} // namespace MetalAtomic64
+extern void __metal_atomic64_store_explicit(threadgroup ulong* object, ulong desired);
+extern void __metal_atomic64_store_explicit(device ulong* object, ulong desired);
+extern ulong __metal_atomic64_fetch_add_explicit(device ulong* object, ulong operand, __metal_atomic64_type_id type);
 
-namespace MetalFloat64
+namespace metal_float64
 {
 EXPORT uint increment(uint x);
-} // namespace MetalFloat64
+} // namespace metal_float64
 
 // Ensure that public API matches the MSLib.
 
-namespace MetalFloat64
+namespace metal_float64
 {
 using namespace metal;
 
@@ -94,19 +91,20 @@ struct _valid_store_type<T, typename enable_if<_disjunction<
 template <typename T, typename U, typename _E = typename enable_if<_valid_store_type<threadgroup T *>::value && is_convertible<T, U>::value>::type>
 METAL_FUNC void atomic_store_explicit(volatile threadgroup _atomic<T> * object, U desired, memory_order order) METAL_CONST_ARG(order) METAL_VALID_STORE_ORDER(order)
 {
-  MetalAtomic64::__atomic_store_explicit(
+  __metal_atomic64_store_explicit(
     (threadgroup ulong*)&object->__s,
     as_type<ulong>(decltype(object->__s)(desired)));
 }
 template <typename T, typename U, typename _E = typename enable_if<_valid_store_type<device T *>::value && is_convertible<T, U>::value>::type>
 METAL_FUNC void atomic_store_explicit(volatile device _atomic<T> *object, U desired, memory_order order) METAL_CONST_ARG(order) METAL_VALID_STORE_ORDER(order)
 {
-  MetalAtomic64::__atomic_store_explicit(
+  __metal_atomic64_store_explicit(
     (device ulong*)&object->__s,
     as_type<ulong>(decltype(object->__s)(desired)));
 }
 
-// Bypass the name collision between `metal::atomic` and `MetalFloat64::atomic`.
+// Bypass the name collision between `metal::atomic` and
+// `metal_float64::atomic`.
 
 namespace
 {
@@ -127,7 +125,7 @@ MAKE_METAL_BASE(float);
 #define MAKE_METAL_FLOAT64_BASE(T) \
 template <> \
 struct __atomic_base<T> { \
-  using actual_atomic = MetalFloat64::atomic<T>; \
+  using actual_atomic = metal_float64::atomic<T>; \
 }; \
 
 #undef MAKE_METAL_FLOAT64_BASE
@@ -136,10 +134,10 @@ struct __atomic_base<T> { \
 
 // TODO: __metal_float64_common_atomic
 
-} // namespace MetalFloat64
+} // namespace metal_float64
 
 
 
 
-#define _atomic MetalFloat64::__metal_float64_common_atomic
-#define atomic MetalFloat64::__metal_float64_common_atomic
+#define _atomic metal_float64::__metal_float64_common_atomic
+#define atomic metal_float64::__metal_float64_common_atomic

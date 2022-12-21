@@ -6,12 +6,12 @@
 //
 
 #include <metal_stdlib>
-#include <MetalFloat64/MetalFloat64.h>
+#include <metal_float64>
 using namespace metal;
-using namespace MetalFloat64;
+using namespace metal_float64;
 
 // TODO: Remove this entire file.
 
-ALWAYS_INLINE uint MetalFloat64::increment(uint x) {
+ALWAYS_INLINE uint metal_float64::increment(uint x) {
   return x + 1;
 }

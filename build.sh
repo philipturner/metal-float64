@@ -53,6 +53,10 @@ swift "${SWIFT_PACKAGE_DIR}/build.swift" \
   $PACKAGED_LIBRARY_DIR \
   "--merge-float64-headers"
 
+# Rename "MetalFloat64/MetalFloat64.h" to "metal_float64".
+mv "${PACKAGED_LIBRARY_DIR}/include/MetalFloat64/MetalFloat64.h" \
+  "${PACKAGED_LIBRARY_DIR}/include/metal_float64"
+
 # Compile the library.
 # - Uses '-Os' to encourage force-noinlines to work correctly.
 # - '@rpath' causes a massive headache; use '@loader_path' instead. This means
@@ -125,10 +129,6 @@ cp -r "${resource_copy_src}/lib/libMetalFloat64.metallib" \
       "${resource_copy_dst}/libMetalFloat64.metallib"
 cp -r "${resource_copy_src}/lib/Tests.metallib" \
       "${resource_copy_dst}/Tests.metallib"
-
-## TODO: This shouldn't be copied.
-#cp -r "${resource_copy_src}/placeholders/libMetalAtomic64.metallib" \
-#      "${resource_copy_dst}/libMetalAtomic64.metallib"
 
 # Prepare "usr" directory.
 if [[ -e "${PACKAGED_LIBRARY_DIR}/usr" ]]; then

@@ -6,10 +6,9 @@
 //
 
 #include <metal_stdlib>
-#include <MetalFloat64/MetalFloat64.h>
+#include <metal_float64>
 using namespace metal;
-using namespace MetalFloat64;
-using namespace MetalAtomic64; // TODO: Remove
+using namespace metal_float64;
 
 kernel void testAtomicsCompile(
   device void *input [[buffer(0)]],
@@ -22,7 +21,7 @@ kernel void testAtomicsCompile(
   
   // TODO: Atomics for int, uint, long, ulong - test that they all compile.
   auto ulong_output = (device ulong*)output;
-  MetalAtomic64::__atomic_store_explicit(ulong_output + tid, 1);
+  __metal_atomic64_store_explicit(ulong_output + tid, 1);
 }
 
 struct RandomData {
@@ -44,7 +43,7 @@ kernel void testAtomicAdd(
   uint randomDataAddr = tid * itemsPerThread;
   for (uint i = 0; i < itemsPerThread; ++i) {
     auto this_data = randomData[randomDataAddr + i];
-    __atomic_fetch_add_explicit(
+    __metal_atomic64_fetch_add_explicit(
      outBuffer + this_data.index, this_data.value, u64);
 //    atomic_fetch_add_explicit((device atomic_uint*)(outBuffer + this_data.index), this_data.value, memory_order_relaxed);
   }

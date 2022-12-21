@@ -37,7 +37,7 @@ TODO: How to initialize the libMetalAtomic64. Warn that you must call `useResour
 #include <metal_stdlib>
 #include <MetalFloat64/MetalFloat64.h>
 using namespace metal;
-using namespace MetalFloat64;
+using namespace metal_float64;
 ```
 
 This library redefines the `double` keyword using a compiler macro, making it legal to use in MSL. The keyword is a typealias of one of the precisions below, which can be chosen through a compiler flag. The compiler flag you easily switch an entire code base to a different precision, and see how it affects performance. Vectorized variants of underlying precisions use `vec<float64_t, 2>` syntax. The keywords `double2`, `double3`, and `double4` are redefined as typealiases of such vectors.

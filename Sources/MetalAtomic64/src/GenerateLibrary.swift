@@ -196,13 +196,6 @@ struct DeviceAddressWrapper {
   device atomic_uint* address;
 };
 
-// TODO: Remove this.
-INTERNAL_INLINE device atomic_uint* __get_lock_buffer() {
-  auto const_ref = reinterpret_cast<constant LockBufferAddressWrapper&>
-    (lock_buffer_address);
-  return const_ref.address;
-};
-
 // This assumes the object is aligned to 8 bytes (the address's lower 3 bits
 // are all zeroes). Otherwise, behavior is undefined.
 INTERNAL_INLINE device atomic_uint* get_lock(device ulong* object) {
@@ -265,12 +258,19 @@ INTERNAL_INLINE void memory_store(device atomic_uint *lower, device atomic_uint*
 
 // MARK: - Implementation of Exposed Functions
 
-namespace MetalFloat64 {
+namespace metal_float64
+{
 extern uint increment(uint x);
-}
+} // namespace metal_float64
 
+// We utilize the type ID at runtime to dynamically dispatch to different
+// functions. This approach minimizes the time necessary to compile
+// MetalAtomic64 from scratch at runtime, while reducing binary size. Also,
+// atomic operations will be memory bound, so the ALU time for switching over
+// enum cases should be hidden.
+//
 // Several operations are fused into common functions, reducing compile time and
-// binary size by ~70%. More explanation is under `TypeID`.
+// binary size by ~70%.
 // - group 1: add_i/u64, add_f64, add_f59, add_f43
 // - group 2: sub_i/u64, sub_f64, sub_f59, sub_f43
 // - group 3: max_i64, max_u64, max_f64, max_f59, max_f43
@@ -278,14 +278,7 @@ extern uint increment(uint x);
 // - group 5: and_i/u64, or_i/u64, xor_i/u64
 // - group 6: cmpxchg_i/u64, cmpxchg_f64, cmpxchg_f59, cmpxchg_f43
 // - group 7: store, load, xchg
-namespace MetalAtomic64
-{
-// We utilize the type ID at runtime to dynamically dispatch to different
-// functions. This approach minimizes the time necessary to compile
-// MetalAtomic64 from scratch at runtime, while reducing binary size. Also,
-// atomic operations will be memory bound, so the ALU time for switching over
-// enum cases should be hidden.
-enum TypeID: ushort {
+enum __metal_atomic64_type_id: ushort {
   i64 = 0, // signed long
   u64 = 1, // unsigned long
   f64 = 2, // IEEE double precision
@@ -294,7 +287,7 @@ enum TypeID: ushort {
 };
 
 // Entering an invalid operation ID causes undefined behavior at runtime.
-enum OperationID: ushort {
+enum __metal_atomic64_operation_id: ushort {
   store = 0, // atomic_store_explicit
   load = 1, // atomic_load_explicit
   xchg = 2, // atomic_exchange_explicit
@@ -322,22 +315,22 @@ enum OperationID: ushort {
 // As an optimization, also function-call into pre-compiled AIR code that
 // fetches the threadgroup ID from an SReg32. Incorporate that into the hash
 // too.
-EXPORT void __atomic_store_explicit(threadgroup ulong* object, ulong desired) {
+EXPORT void __metal_atomic64_store_explicit(threadgroup ulong* object, ulong desired) {
   // Ensuring binary dependency to MetalFloat64. TODO: Remove
   {
     uint x = 1;
-    x = MetalFloat64::increment(x);
+    x = metal_float64::increment(x);
   }
   threadgroup_barrier(mem_flags::mem_threadgroup);
   object[0] = desired;
   threadgroup_barrier(mem_flags::mem_threadgroup);
 }
 
-EXPORT void __atomic_store_explicit(device ulong* object, ulong desired) {
+EXPORT void __metal_atomic64_store_explicit(device ulong* object, ulong desired) {
   // Ensuring binary dependency to MetalFloat64. TODO: Remove
   {
     uint x = 1;
-    x = MetalFloat64::increment(x);
+    x = metal_float64::increment(x);
   }
   // acquire lock
   object[0] = desired;
@@ -345,7 +338,7 @@ EXPORT void __atomic_store_explicit(device ulong* object, ulong desired) {
 }
 
 // TODO: Transform this into a templated function.
-EXPORT ulong __atomic_fetch_add_explicit(device ulong* object, ulong operand, TypeID type) {
+EXPORT ulong __metal_atomic64_fetch_add_explicit(device ulong* object, ulong operand, __metal_atomic64_type_id type) {
   device atomic_uint* lock = get_lock(object);
   auto lower_address = reinterpret_cast<device atomic_uint*>(object);
   auto upper_address = get_upper_address(lower_address);
@@ -372,6 +365,5 @@ EXPORT ulong __atomic_fetch_add_explicit(device ulong* object, ulong operand, Ty
   }
   return output;
 }
-} // namespace MetalAtomic64
 
 """ // end copying here

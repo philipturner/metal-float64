@@ -1,19 +1,19 @@
 // MARK: - Double.h
 
 // Default precision for 64-bit math.
-#define double MetalFloat64::float64_t
+#define double metal_float64::float64_t
 
-namespace MetalFloat64
+namespace metal_float64
 {
 class float64_t {
-  
+  ulong data;
 };
 
 class float59_t {
-  
+  ulong data;
 };
 
 class float43_t {
-  
+  ulong data;
 };
-} // namespace MetalFloat64
+} // namespace metal_float64
