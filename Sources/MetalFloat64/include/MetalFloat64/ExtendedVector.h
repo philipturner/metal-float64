@@ -8,7 +8,7 @@
 namespace metal_float64
 {
 // Vectors cannot be implemented through the compiler, but luckily we can work
-// around this. We haven't implemented matrices or packed vectors yet.
+// around this.
 // https://stackoverflow.com/a/51822107
 
 // TODO: support thread, device, constant, threadgroup, thread_imageblock, ray_data, object_data address spaces
@@ -28,54 +28,73 @@ class vec {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warray-bounds"
 
+// TODO: Also define all addrspaces for VEC4_22_CTOR.
+
+#define VEC_SWIZZLE_ALL_CTORS(CTORS) \
+VEC_SWIZZLE_ALL_CTORS_INTERNAL(CTORS, thread); \
+VEC_SWIZZLE_ALL_CTORS_INTERNAL(CTORS, device); \
+VEC_SWIZZLE_ALL_CTORS_INTERNAL(CTORS, constant); \
+
+#define VEC_SWIZZLE_ALL_CTORS_INTERNAL(CTORS, ADDRSPACE2) \
+CTORS(thread, ADDRSPACE2); \
+CTORS(device, ADDRSPACE2); \
+CTORS(constant, ADDRSPACE2); \
+
 namespace
 {
-template <typename T, uint I>
-class scalar_swizzle
+template <typename T, uint A, typename vec_type = vec<T, 1>>
+class vec1_swizzle
 {
   // Must be public as an internal implementation detail, but the user should
   // never access this property.
   T _data[1];
 public:
-  thread T &operator=(const thread T& x) thread
+#define VEC1_SWIZZLE_CTORS(ADDRSPACE1, ADDRSPACE2) \
+template <uint X> \
+vec_type operator=(const ADDRSPACE1 vec1_swizzle<T, X>& vec) ADDRSPACE2 { \
+  return *this = vec_type(vec); \
+} \
+vec_type operator=(const ADDRSPACE1 vec_type& vec) ADDRSPACE2 { \
+  return vec_type(_data[A] = vec.x); \
+} \
+
+  VEC_SWIZZLE_ALL_CTORS(VEC1_SWIZZLE_CTORS);
+  
+//  operator vec_type() const
+//  {
+//    return vec_type(_data[A]);
+//  }
+  operator T() const thread
   {
-    _data[I] = x;
-    return _data[I];
+    return _data[A];
   }
-  device T &operator=(const device T& x) device
+  operator T() const device
   {
-    _data[I] = x;
-    return _data[I];
+    return _data[A];
   }
-  constant T &operator=(const constant T& x) constant
+  operator T() const constant
   {
-    _data[I] = x;
-    return _data[I];
+    return _data[A];
   }
-  operator T() const
-  {
-    return _data[I];
-  }
+  
   T operator++(int)
   {
-    return _data[I]++;
+    return _data[A]++;
   }
   T operator++()
   {
-    return ++_data[I];
+    return ++_data[A];
   }
   T operator--(int)
   {
-    return _data[I]--;
+    return _data[A]--;
   }
   T operator--()
   {
-    return --_data[I];
+    return --_data[A];
   }
 };
 
-// We use a vec_type in a template instead of forward declarations to prevent
-// errors in some compilers.
 template <typename T, uint A, uint B, typename vec_type = vec<T, 2>>
 class vec2_swizzle
 {
@@ -83,136 +102,18 @@ class vec2_swizzle
   // never access this property.
   T _data[2];
 public:
-  // TODO: Wrap all this address space boilerplate in macros.
-  // TODO: Can I remove all these implicit constructors?
-  
-//  // thread
-//  template <uint X, uint Y>
-//  vec2_swizzle(const thread vec2_swizzle<T, X, Y>& vec) thread : vec2_swizzle(vec_type(vec)) {
-//
-//  }
-//  template <uint X, uint Y>
-//  vec2_swizzle(const device vec2_swizzle<T, X, Y>& vec) thread : vec2_swizzle(vec_type(vec)) {
-//
-//  }
-//  template <uint X, uint Y>
-//  vec2_swizzle(const constant vec2_swizzle<T, X, Y>& vec) thread : vec2_swizzle(vec_type(vec)) {
-//
-//  }
-//
-//  // device
-//  template <uint X, uint Y>
-//  vec2_swizzle(const thread vec2_swizzle<T, X, Y>& vec) device : vec2_swizzle(vec_type(vec)) {
-//
-//  }
-//  template <uint X, uint Y>
-//  vec2_swizzle(const device vec2_swizzle<T, X, Y>& vec) device : vec2_swizzle(vec_type(vec)) {
-//
-//  }
-//  template <uint X, uint Y>
-//  vec2_swizzle(const constant vec2_swizzle<T, X, Y>& vec) device : vec2_swizzle(vec_type(vec)) {
-//
-//  }
-//
-//  // constant
-//  template <uint X, uint Y>
-//  vec2_swizzle(const thread vec2_swizzle<T, X, Y>& vec) constant : vec2_swizzle(vec_type(vec)) {
-//
-//  }
-//  template <uint X, uint Y>
-//  vec2_swizzle(const device vec2_swizzle<T, X, Y>& vec) constant : vec2_swizzle(vec_type(vec)) {
-//
-//  }
-//  template <uint X, uint Y>
-//  vec2_swizzle(const constant vec2_swizzle<T, X, Y>& vec) constant : vec2_swizzle(vec_type(vec)) {
-//
-//  }
-  
-  // thread
-  template <uint X, uint Y>
-  vec_type operator=(const thread vec2_swizzle<T, X, Y>& vec) thread {
-    return *this = vec_type(vec);
-  }
-  template <uint X, uint Y>
-  vec_type operator=(const device vec2_swizzle<T, X, Y>& vec) thread {
-    return *this = vec_type(vec);
-  }
-  template <uint X, uint Y>
-  vec_type operator=(const constant vec2_swizzle<T, X, Y>& vec) thread {
-    return *this = vec_type(vec);
-  }
-  
-  // device
-  template <uint X, uint Y>
-  vec_type operator=(const thread vec2_swizzle<T, X, Y>& vec) device {
-    return *this = vec_type(vec);
-  }
-  template <uint X, uint Y>
-  vec_type operator=(const device vec2_swizzle<T, X, Y>& vec) device {
-    return *this = vec_type(vec);
-  }
-  template <uint X, uint Y>
-  vec_type operator=(const constant vec2_swizzle<T, X, Y>& vec) device {
-    return *this = vec_type(vec);
-  }
-  
-  // constant
-  template <uint X, uint Y>
-  vec_type operator=(const thread vec2_swizzle<T, X, Y>& vec) constant {
-    return *this = vec_type(vec);
-  }
-  template <uint X, uint Y>
-  vec_type operator=(const device vec2_swizzle<T, X, Y>& vec) constant {
-    return *this = vec_type(vec);
-  }
-  template <uint X, uint Y>
-  vec_type operator=(const constant vec2_swizzle<T, X, Y>& vec) constant {
-    return *this = vec_type(vec);
-  }
-  
-  // thread
-  vec_type operator=(const thread vec_type& vec) thread
-  {
-    return vec_type(_data[A] = vec.x, _data[B] = vec.y);
-  }
-  vec_type operator=(const device vec_type& vec) thread
-  {
-    return vec_type(_data[A] = vec.x, _data[B] = vec.y);
-  }
-  vec_type operator=(const constant vec_type& vec) thread
-  {
-    return vec_type(_data[A] = vec.x, _data[B] = vec.y);
-  }
+#define VEC2_SWIZZLE_CTORS(ADDRSPACE1, ADDRSPACE2) \
+template <uint X, uint Y> \
+vec_type operator=(const ADDRSPACE1 vec2_swizzle<T, X, Y>& vec) ADDRSPACE2 { \
+  return *this = vec_type(vec); \
+} \
+vec_type operator=(const ADDRSPACE1 vec_type& vec) ADDRSPACE2 { \
+  return vec_type(_data[A] = vec.x, _data[B] = vec.y); \
+} \
 
-  // device
-  vec_type operator=(const thread vec_type& vec) device
-  {
-    return vec_type(_data[A] = vec.x, _data[B] = vec.y);
-  }
-  vec_type operator=(const device vec_type& vec) device
-  {
-    return vec_type(_data[A] = vec.x, _data[B] = vec.y);
-  }
-  vec_type operator=(const constant vec_type& vec) device
-  {
-    return vec_type(_data[A] = vec.x, _data[B] = vec.y);
-  }
-  
-  // constant
-  vec_type operator=(const thread vec_type& vec) constant
-  {
-    return vec_type(_data[A] = vec.x, _data[B] = vec.y);
-  }
-  vec_type operator=(const device vec_type& vec) constant
-  {
-    return vec_type(_data[A] = vec.x, _data[B] = vec.y);
-  }
-  vec_type operator=(const constant vec_type& vec) constant
-  {
-    return vec_type(_data[A] = vec.x, _data[B] = vec.y);
-  }
-  
-  operator vec_type()
+  VEC_SWIZZLE_ALL_CTORS(VEC2_SWIZZLE_CTORS);
+
+  operator vec_type() const
   {
     return vec_type(_data[A], _data[B]);
   }
@@ -225,11 +126,18 @@ class vec3_swizzle
   // never access this property.
   T _data[3];
 public:
-  vec_type operator=(const thread vec_type& vec)
-  {
-    return vec_type(_data[A] = vec.x, _data[B] = vec.y, _data[C] = vec.z);
-  }
-  operator vec_type()
+#define VEC3_SWIZZLE_CTORS(ADDRSPACE1, ADDRSPACE2) \
+template <uint X, uint Y, uint Z> \
+vec_type operator=(const ADDRSPACE1 vec3_swizzle<T, X, Y, Z>& vec) ADDRSPACE2 { \
+  return *this = vec_type(vec); \
+} \
+vec_type operator=(const ADDRSPACE1 vec_type& vec) ADDRSPACE2 { \
+  return vec_type(_data[A] = vec.x, _data[B] = vec.y, _data[C] = vec.z); \
+} \
+
+  VEC_SWIZZLE_ALL_CTORS(VEC3_SWIZZLE_CTORS);
+  
+  operator vec_type() const
   {
     return vec_type(_data[A], _data[B], _data[C]);
   }
@@ -242,15 +150,27 @@ class vec4_swizzle
   // never access this property.
   T _data[4];
 public:
-  vec_type operator=(const thread vec_type& vec)
-  {
-    return vec_type(_data[A] = vec.x, _data[B] = vec.y, _data[C] = vec.z, _data[D] = vec.w);
-  }
-  operator vec_type()
+#define VEC4_SWIZZLE_CTORS(ADDRSPACE1, ADDRSPACE2) \
+template <uint X, uint Y, uint Z, uint W> \
+vec_type operator=(const ADDRSPACE1 vec4_swizzle<T, X, Y, Z, W>& vec) ADDRSPACE2 { \
+  return *this = vec_type(vec); \
+} \
+vec_type operator=(const ADDRSPACE1 vec_type& vec) ADDRSPACE2 { \
+  return vec_type(_data[A] = vec.x, _data[B] = vec.y, _data[C] = vec.z, _data[D] = vec.w); \
+} \
+  
+  VEC_SWIZZLE_ALL_CTORS(VEC4_SWIZZLE_CTORS);
+  
+  operator vec_type() const
   {
     return vec_type(_data[A], _data[B], _data[C], _data[D]);
   }
 };
+
+#undef VEC4_SWIZZLE_CTORS
+#undef VEC3_SWIZZLE_CTORS
+#undef VEC2_SWIZZLE_CTORS
+#undef VEC1_SWIZZLE_CTORS
 
 #pragma clang diagnostic ignored "-Wunused-value"
 #pragma clang diagnostic pop
@@ -260,7 +180,7 @@ public:
 // vec3_swizzle: (1^3) / 1 = 1
 // vec4_swizzle: (1^4) / 1 = 1
 #define VEC1_SWIZZLE_GROUP(i, x, r) \
-scalar_swizzle<T, i> x, r; \
+vec1_swizzle<T, i> x, r; \
 vec2_swizzle<T, i, i> x##x, r##r; \
 vec3_swizzle<T, i, i, i> x##x##x, r##r##r; \
 vec4_swizzle<T, i, i, i, i> x##x##x##x, r##r##r##r; \
@@ -338,6 +258,19 @@ public:
   {
     x = a;
   }
+  
+#define VEC1_CTORS(ADDRSPACE1, ADDRSPACE2) \
+vec(const ADDRSPACE1 vec<T, 1>& a) ADDRSPACE2 \
+{ \
+  x = a; \
+} \
+\
+template <uint A> \
+vec(const ADDRSPACE1 vec1_swizzle<T, A>& a) ADDRSPACE2 \
+: vec(vec(a)) {} \
+
+  VEC_SWIZZLE_ALL_CTORS(VEC1_CTORS);
+
 };
 
 template <typename T>
@@ -370,38 +303,18 @@ public:
     x = a;
     y = b;
   }
-  vec(const thread vec<T, 2>& ab) thread
-  {
-    xy = ab;
-  }
-  vec(const device vec<T, 2>& ab) device
-  {
-    xy = ab;
-  }
-  vec(const constant vec<T, 2>& ab) constant
-  {
-    xy = ab;
-  }
-  template <uint A, uint B>
-  vec(const thread vec2_swizzle<T, A, B>& ab) thread : vec(vec(ab)) {}
-  template <uint A, uint B>
-  vec(const device vec2_swizzle<T, A, B>& ab) thread : vec(vec(ab)) {}
-  template <uint A, uint B>
-  vec(const constant vec2_swizzle<T, A, B>& ab) thread : vec(vec(ab)) {}
+
+#define VEC2_CTORS(ADDRSPACE1, ADDRSPACE2) \
+vec(const ADDRSPACE1 vec<T, 2>& ab) ADDRSPACE2 \
+{ \
+  xy = ab; \
+} \
+\
+template <uint A, uint B> \
+vec(const ADDRSPACE1 vec2_swizzle<T, A, B>& ab) ADDRSPACE2 \
+: vec(vec(ab)) {} \
   
-  template <uint A, uint B>
-  vec(const thread vec2_swizzle<T, A, B>& ab) device : vec(vec(ab)) {}
-  template <uint A, uint B>
-  vec(const device vec2_swizzle<T, A, B>& ab) device : vec(vec(ab)) {}
-  template <uint A, uint B>
-  vec(const constant vec2_swizzle<T, A, B>& ab) device : vec(vec(ab)) {}
-  
-  template <uint A, uint B>
-  vec(const thread vec2_swizzle<T, A, B>& ab) constant : vec(vec(ab)) {}
-  template <uint A, uint B>
-  vec(const device vec2_swizzle<T, A, B>& ab) constant : vec(vec(ab)) {}
-  template <uint A, uint B>
-  vec(const constant vec2_swizzle<T, A, B>& ab) constant : vec(vec(ab)) {}
+  VEC_SWIZZLE_ALL_CTORS(VEC2_CTORS);
 };
 
 template <typename T>
@@ -441,24 +354,34 @@ public:
     y = b;
     z = c;
   }
-  vec(const thread vec<T, 3>& abc) thread
-  {
-    xyz = abc;
-  }
-  vec(const device vec<T, 3>& abc) device
-  {
-    xyz = abc;
-  }
-  vec(const constant vec<T, 3>& abc) constant
-  {
-    xyz = abc;
-  }
-  template <uint A, uint B, uint C>
-  vec(const thread vec3_swizzle<T, A, B, C>& abc) thread : vec(abc) {}
-  template <uint A, uint B, uint C>
-  vec(const device vec3_swizzle<T, A, B, C>& abc) device : vec(abc) {}
-  template <uint A, uint B, uint C>
-  vec(const constant vec3_swizzle<T, A, B, C>& abc) constant : vec(abc) {}
+
+#define VEC3_CTORS(ADDRSPACE1, ADDRSPACE2) \
+vec(const ADDRSPACE1 vec<T, 3>& abc) ADDRSPACE2 \
+{ \
+  xyz = abc; \
+} \
+vec(const ADDRSPACE1 vec<T, 2>& ab, T c) ADDRSPACE2 \
+{\
+  xy = ab; \
+  z = c; \
+}\
+vec(T a, const ADDRSPACE1 vec<T, 2>& bc) ADDRSPACE2 \
+{\
+  x = a; \
+  yz = bc; \
+}\
+\
+template <uint A, uint B, uint C> \
+vec(const ADDRSPACE1 vec3_swizzle<T, A, B, C>& abc) ADDRSPACE2 \
+: vec(vec(abc)) {} \
+template <uint A, uint B> \
+vec(const ADDRSPACE1 vec2_swizzle<T, A, B>& ab, T c) ADDRSPACE2 \
+: vec(vec(ab, c)) {} \
+template <uint B, uint C> \
+vec(T a, const ADDRSPACE1 vec2_swizzle<T, B, C>& bc) ADDRSPACE2 \
+: vec(vec(a, bc)) {} \
+  
+  VEC_SWIZZLE_ALL_CTORS(VEC3_CTORS);
 };
 
 template <typename T>
@@ -501,7 +424,11 @@ VEC4_SWIZZLE_GROUP(3, 0, 1, 2, w, x, y, z, a, r, g, b); \
     VEC4_ALL_SWIZZLES
   };
 public:
-  vec() {}
+  // TODO: Templatize all constructors like this.
+  vec() thread = default;
+  vec() device = default;
+  vec() constant = default;
+  vec() threadgroup = default;
   vec(T all)
   {
     x = y = z = w = all;
@@ -513,25 +440,116 @@ public:
     z = c;
     w = d;
   }
-  vec(const thread vec<T, 4>& abcd) thread
+  vec(vec<T, 2> ab, vec<T, 2> cd)
   {
-    xyzw = abcd;
+    x = ab.x;
+    y = ab.y;
+    z = cd.x;
+    w = cd.y;
   }
-  vec(const device vec<T, 4>& abcd) device
-  {
-    xyzw = abcd;
-  }
-  vec(const constant vec<T, 4>& abcd) constant
-  {
-    xyzw = abcd;
-  }
-  template <uint A, uint B, uint C, uint D>
-  vec(const thread vec4_swizzle<T, A, B, C, D>& abcd) thread : vec(abcd) {}
-  template <uint A, uint B, uint C, uint D>
-  vec(const device vec4_swizzle<T, A, B, C, D>& abcd) device : vec(abcd) {}
-  template <uint A, uint B, uint C, uint D>
-  vec(const constant vec4_swizzle<T, A, B, C, D>& abcd) constant : vec(abcd) {}
+
+#define VEC4_CTORS(ADDRSPACE1, ADDRSPACE2) \
+vec(const ADDRSPACE1 vec<T, 4>& abcd) ADDRSPACE2 \
+{ \
+  xyzw = abcd; \
+} \
+vec(const ADDRSPACE1 vec<T, 3>& abc, T d) ADDRSPACE2 \
+{ \
+  xyz = abc; \
+  w = d;\
+} \
+vec(T a, const ADDRSPACE1 vec<T, 3>& bcd) ADDRSPACE2 \
+{ \
+  x = a; \
+  yzw = bcd;\
+} \
+vec(const ADDRSPACE1 vec<T, 2>& ab, T c, T d) ADDRSPACE2 \
+{ \
+  xy = ab; \
+  z = c; \
+  w = d;\
+} \
+vec(T a, const ADDRSPACE1 vec<T, 2>& bc, T d) ADDRSPACE2 \
+{ \
+  x = a; \
+  yz = bc; \
+  w = d;\
+} \
+vec(T a, T b, const ADDRSPACE1 vec<T, 2>& cd) ADDRSPACE2 \
+{ \
+  x = a; \
+  y = b; \
+  zw = cd;\
+} \
+\
+template <uint A, uint B, uint C, uint D> \
+vec(const ADDRSPACE1 vec4_swizzle<T, A, B, C, D>& abcd) ADDRSPACE2 \
+: vec(vec(abcd)) {} \
+template <uint A, uint B, uint C> \
+vec(const ADDRSPACE1 vec3_swizzle<T, A, B, C>& abc, T d) ADDRSPACE2 \
+: vec(vec(abc, d)) {} \
+template <uint B, uint C, uint D> \
+vec(T a, const ADDRSPACE1 vec3_swizzle<T, B, C, D>& bcd) ADDRSPACE2 \
+: vec(vec(a, bcd)) {} \
+template <uint A, uint B, uint C, uint D> \
+vec(const ADDRSPACE1 vec2_swizzle<T, A, B>& ab, T c, T d) ADDRSPACE2 \
+: vec(vec(ab, c, d)) {} \
+template <uint A, uint B, uint C, uint D> \
+vec(T a, const ADDRSPACE1 vec2_swizzle<T, C, D>& bc, T d) ADDRSPACE2 \
+: vec(vec(a, bc, d)) {} \
+template <uint A, uint B, uint C, uint D> \
+vec(T a, T b, const ADDRSPACE1 vec2_swizzle<T, C, D>& cd) ADDRSPACE2 \
+: vec(vec(a, b, cd)) {} \
+
+  VEC_SWIZZLE_ALL_CTORS(VEC4_CTORS);
+  
+  // TODO: Hoist this to the other macros that declare more addrspaces.
+  
+
+  
+
+//  vec(vec<T, 2> ab, vec<T, 2> cd) thread
+//  {
+//    x = ab.x;
+//    y = ab.y;
+//    z = cd.x;
+//    w = cd.y;
+//  }
+  
+
+
+//
+//#define VEC4_22_CTOR(ADDRSPACE1, ADDRSPACE2, ADDRSPACE3) \
+//vec(const ADDRSPACE1 vec<T, 2>& ab, const ADDRSPACE2 vec<T, 2>& cd) ADDRSPACE3 \
+//{ \
+//  x = ab.x; \
+//  y = ab.y; \
+//  z = cd.x; \
+//  w = cd.y; \
+//} \
+//template <uint A, uint B, uint C, uint D> \
+//vec(const ADDRSPACE1 vec2_swizzle<T, A, B>& ab, const ADDRSPACE2 vec2_swizzle<T, C, D>& cd) ADDRSPACE3 \
+//: vec(vec(ab, cd)) {} \
+//
+//#define VEC4_22_CTORS_INTERNAL2(ADDRSPACE2, ADDRSPACE3) \
+//VEC4_22_CTOR(thread, ADDRSPACE2, ADDRSPACE3); \
+//VEC4_22_CTOR(device, ADDRSPACE2, ADDRSPACE3); \
+//VEC4_22_CTOR(constant, ADDRSPACE2, ADDRSPACE3); \
+//
+//#define VEC4_22_CTORS_INTERNAL1(ADDRSPACE3) \
+//VEC4_22_CTORS_INTERNAL2(thread, ADDRSPACE3); \
+//VEC4_22_CTORS_INTERNAL2(device, ADDRSPACE3); \
+//VEC4_22_CTORS_INTERNAL2(constant, ADDRSPACE3); \
+//
+//#define VEC4_22_ALL_CTORS() \
+//VEC4_22_CTORS_INTERNAL1(thread); \
+//VEC4_22_CTORS_INTERNAL1(device); \
+//VEC4_22_CTORS_INTERNAL1(constant); \
+//
+//  VEC4_22_ALL_CTORS();
 };
+
+// TODO: Undef all VEC4_CTORS, VEC4_VEC2_VEC2_CTOR(S)(WRAPPER), etc.
 
 #undef VEC4_ALL_SWIZZLES
 #undef VEC3_ALL_SWIZZLES
@@ -542,6 +560,9 @@ public:
 #undef VEC3_SWIZZLE_GROUP
 #undef VEC2_SWIZZLE_GROUP
 #undef VEC1_SWIZZLE_GROUP
+
+#undef VEC_SWIZZLE_ALL_CTORS_INTERNAL
+#undef VEC_SWIZZLE_ALL_CTORS
 
 // Bypass the name collision between `metal::vec` and `metal_float64::vec`.
 

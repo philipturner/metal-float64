@@ -46,17 +46,47 @@ inline void test_double_redefinition() {
 #pragma clang diagnostic pop
 }
 
-// TODO: Test arithmetic functions on vectors.
-// TODO: Test mixed swizzle and normal data types for complex vector constructors.
-// TODO: Test scalar swizzles.
+// TODO: Test vec1_swizzle.
+// TODO: Implement, test mixed vec1 and scalar data types for complex vector constructors.
+// TODO: Implement, test arithmetic functions on vectors.
+// TODO: Test vec4(vec2, vec2) coming from two different address spaces. Perhaps
+// implement it by delegating to the scalar initializer, with something templated.
 kernel void testExtendedVectorsCompile
  (
   device double3 *buffer1 [[buffer(0)]],
-  constant double3 *buffer2 [[buffer(1)]]
+  constant double3 *buffer2 [[buffer(1)]],
+  device double4 *buffer3 [[buffer(2)]]
   /*only one thread should ever be dispatched*/)
 {
   double3 temp_value = double3(float64_t());
   temp_value.yz = buffer1[0].rg;
   temp_value.xz = buffer2[0].rg;
-  buffer1[1].yz = temp_value.xy;
+  buffer3[0].yz = temp_value.xy;
+  
+  thread double4 tg_doubles[3];
+  tg_doubles[0] = double4
+   (
+    ((device double*)(buffer1 + 1))[0],
+    ((constant double*)(buffer2 + 1))[0],
+    temp_value.y,
+    ((device double4*)(buffer1 + 1))[1].a);
+  
+  tg_doubles[1] = double4
+   (
+    ((device double2*)(buffer1 + 2))[0],
+    ((constant double2*)(buffer2 + 2))[0].yx);
+  tg_doubles[1] = double4
+   (
+    ((device double2*)(buffer1 + 2))[0],
+    ((constant double2*)(buffer2 + 2))[0]);
+  tg_doubles[1] = double4
+   (
+    ((device double2*)(buffer1 + 2))[0].xy,
+    ((constant double2*)(buffer2 + 2))[0].yx);
+  
+//  tg_doubles[2] = double4((device double2*)buffer1)
+  
+//  buffer3[0] = tg_doubles[0].xxwy;
+  
+//  threadgroup double4 tg_doubles[1];
 }

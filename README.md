@@ -53,6 +53,38 @@ The initial implementation of this library may only support 64-bit add, multiply
 
 Furthermore, the library will emulate 64-bit integer atomics by randomly assigning locks to a certain memory address. The client must allocate a lock buffer, then enter it when loading their GPU binary at runtime. At runtime, a carefully selected series of 32-bit atomics performs a load, store, or cmpxchg without data races. i64/u64/f64 atomics will be implemented on top of these primitives, matching the capabilities of other data types in the MSL specification. Atomics will only be available through function calls.
 
+Some Metal language types, such as matrices and packed vectors, are not supported. These have little utility, but would require investing significant time to implement. Users can easily create custom data structures for small matrix multiplications, or for packing double-precision vectors into 8-byte alignments. 
+
+<!--
+Only some vector constructors are supported:
+
+```metal
+// Supported:
+double4(double x);
+double4(double x, double y, double z, double w); 
+double4(double4 x);
+
+double3(double x);
+double3(double x, double y, double z); 
+double3(double3, x);
+
+double2(double x); 
+double2(double x, double y);
+double2(double2 x);
+
+// Not supported:
+double4(double2 a, double2 b);
+double4(double2 a, double b, double c); 
+double4(double a, double b, double2 c); 
+double4(double a, double2 b, double c); 
+double4(double3 a, float b);
+double4(double a, double3 b);
+
+double3(double a, double2 b); 
+double3(double2 a, double b); 
+```
+-->
+
 ## Attribution
 
 This project uses ideas from [SoftFloat](https://github.com/ucb-bar/berkeley-softfloat-3) and [LLVM](https://github.com/llvm/llvm-project/blob/2e999b7dd1934a44d38c3a753460f1e5a217e9a5/compiler-rt/lib/builtins/fp_lib.h) to emulate IEEE-compliant FP64 math through 32-bit integer operations.
