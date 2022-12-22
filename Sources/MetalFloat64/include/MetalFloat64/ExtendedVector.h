@@ -28,17 +28,49 @@ class vec {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warray-bounds"
 
-// TODO: Also define all addrspaces for VEC4_22_CTOR.
+#define VEC_SIMPLE_CTORS(COPY_CTOR) \
+vec() thread = default; \
+vec() device = default; \
+vec() constant = default; \
+vec() threadgroup = default; \
+vec() threadgroup_imageblock = default; \
+vec() ray_data = default; \
+vec() object_data = default; \
+\
+COPY_CTOR(thread); \
+COPY_CTOR(device); \
+COPY_CTOR(constant); \
+COPY_CTOR(threadgroup); \
+COPY_CTOR(threadgroup_imageblock); \
+COPY_CTOR(ray_data); \
+COPY_CTOR(object_data); \
 
 #define VEC_SWIZZLE_ALL_CTORS(CTORS) \
 VEC_SWIZZLE_ALL_CTORS_INTERNAL(CTORS, thread); \
 VEC_SWIZZLE_ALL_CTORS_INTERNAL(CTORS, device); \
 VEC_SWIZZLE_ALL_CTORS_INTERNAL(CTORS, constant); \
+VEC_SWIZZLE_ALL_CTORS_INTERNAL(CTORS, threadgroup); \
+VEC_SWIZZLE_ALL_CTORS_INTERNAL(CTORS, threadgroup_imageblock); \
+VEC_SWIZZLE_ALL_CTORS_INTERNAL(CTORS, ray_data); \
+VEC_SWIZZLE_ALL_CTORS_INTERNAL(CTORS, object_data); \
 
 #define VEC_SWIZZLE_ALL_CTORS_INTERNAL(CTORS, ADDRSPACE2) \
 CTORS(thread, ADDRSPACE2); \
 CTORS(device, ADDRSPACE2); \
 CTORS(constant, ADDRSPACE2); \
+CTORS(threadgroup, ADDRSPACE2); \
+CTORS(threadgroup_imageblock, ADDRSPACE2); \
+CTORS(ray_data, ADDRSPACE2); \
+CTORS(object_data, ADDRSPACE2); \
+
+#define VEC_SWIZZLE_CONVERT_OPERATORS(OPERATOR) \
+OPERATOR(thread); \
+OPERATOR(device); \
+OPERATOR(constant); \
+OPERATOR(threadgroup); \
+OPERATOR(threadgroup_imageblock); \
+OPERATOR(ray_data); \
+OPERATOR(object_data); \
 
 namespace
 {
@@ -60,22 +92,17 @@ vec_type operator=(const ADDRSPACE1 vec_type& vec) ADDRSPACE2 { \
 
   VEC_SWIZZLE_ALL_CTORS(VEC1_SWIZZLE_CTORS);
   
-//  operator vec_type() const
-//  {
-//    return vec_type(_data[A]);
-//  }
-  operator T() const thread
-  {
-    return _data[A];
-  }
-  operator T() const device
-  {
-    return _data[A];
-  }
-  operator T() const constant
-  {
-    return _data[A];
-  }
+#define VEC1_SWIZZLE_CONVERT_OPERATOR(ADDRSPACE) \
+  operator vec_type() const ADDRSPACE \
+  { \
+    return vec_type(_data[A]); \
+  } \
+  operator T() const ADDRSPACE \
+  { \
+    return _data[A]; \
+  } \
+
+  VEC_SWIZZLE_CONVERT_OPERATORS(VEC1_SWIZZLE_CONVERT_OPERATOR);
   
   T operator++(int)
   {
@@ -113,10 +140,13 @@ vec_type operator=(const ADDRSPACE1 vec_type& vec) ADDRSPACE2 { \
 
   VEC_SWIZZLE_ALL_CTORS(VEC2_SWIZZLE_CTORS);
 
-  operator vec_type() const
-  {
-    return vec_type(_data[A], _data[B]);
-  }
+#define VEC2_SWIZZLE_CONVERT_OPERATOR(ADDRSPACE) \
+  operator vec_type() const ADDRSPACE \
+  { \
+    return vec_type(_data[A], _data[B]); \
+  } \
+
+  VEC_SWIZZLE_CONVERT_OPERATORS(VEC2_SWIZZLE_CONVERT_OPERATOR);
 };
 
 template <typename T, uint A, uint B, uint C, typename vec_type = vec<T, 3>>
@@ -137,10 +167,13 @@ vec_type operator=(const ADDRSPACE1 vec_type& vec) ADDRSPACE2 { \
 
   VEC_SWIZZLE_ALL_CTORS(VEC3_SWIZZLE_CTORS);
   
-  operator vec_type() const
-  {
-    return vec_type(_data[A], _data[B], _data[C]);
-  }
+#define VEC3_SWIZZLE_CONVERT_OPERATOR(ADDRSPACE) \
+  operator vec_type() const ADDRSPACE \
+  { \
+    return vec_type(_data[A], _data[B], _data[C]); \
+  } \
+
+  VEC_SWIZZLE_CONVERT_OPERATORS(VEC3_SWIZZLE_CONVERT_OPERATOR);
 };
 
 template <typename T, uint A, uint B, uint C, uint D, typename vec_type = vec<T, 4>>
@@ -161,10 +194,13 @@ vec_type operator=(const ADDRSPACE1 vec_type& vec) ADDRSPACE2 { \
   
   VEC_SWIZZLE_ALL_CTORS(VEC4_SWIZZLE_CTORS);
   
-  operator vec_type() const
-  {
-    return vec_type(_data[A], _data[B], _data[C], _data[D]);
-  }
+#define VEC4_SWIZZLE_CONVERT_OPERATOR(ADDRSPACE) \
+  operator vec_type() const ADDRSPACE \
+  { \
+    return vec_type(_data[A], _data[B], _data[C], _data[D]); \
+  } \
+
+  VEC_SWIZZLE_CONVERT_OPERATORS(VEC4_SWIZZLE_CONVERT_OPERATOR);
 };
 
 #undef VEC4_SWIZZLE_CTORS
@@ -236,6 +272,7 @@ vec4_swizzle<T, i, l, k, j> x##w##z##y, r##a##b##g; \
 
 // MARK: - Class Template Specializations
 
+
 template <typename T>
 class vec<T, 1>
 {
@@ -253,24 +290,25 @@ VEC1_SWIZZLE_GROUP(0, x, r); \
     VEC1_ALL_SWIZZLES
   };
 public:
-  vec() {}
+#define VEC1_COPY_CTOR(ADDRSPACE) \
+vec(const ADDRSPACE vec& a)  \
+{ \
+  x = a; \
+} \
+
+  VEC_SIMPLE_CTORS(VEC1_COPY_CTOR);
+  
   vec(T a)
   {
     x = a;
   }
   
 #define VEC1_CTORS(ADDRSPACE1, ADDRSPACE2) \
-vec(const ADDRSPACE1 vec<T, 1>& a) ADDRSPACE2 \
-{ \
-  x = a; \
-} \
-\
 template <uint A> \
 vec(const ADDRSPACE1 vec1_swizzle<T, A>& a) ADDRSPACE2 \
 : vec(vec(a)) {} \
 
   VEC_SWIZZLE_ALL_CTORS(VEC1_CTORS);
-
 };
 
 template <typename T>
@@ -293,7 +331,14 @@ VEC2_SWIZZLE_GROUP(1, 0, y, x, g, r); \
     VEC2_ALL_SWIZZLES;
   };
 public:
-  vec() {}
+#define VEC2_COPY_CTOR(ADDRSPACE) \
+vec(const ADDRSPACE vec& ab) \
+{ \
+  xy = ab; \
+} \
+
+  VEC_SIMPLE_CTORS(VEC2_COPY_CTOR);
+  
   vec(T all)
   {
     x = y = all;
@@ -303,18 +348,6 @@ public:
     x = a;
     y = b;
   }
-
-#define VEC2_CTORS(ADDRSPACE1, ADDRSPACE2) \
-vec(const ADDRSPACE1 vec<T, 2>& ab) ADDRSPACE2 \
-{ \
-  xy = ab; \
-} \
-\
-template <uint A, uint B> \
-vec(const ADDRSPACE1 vec2_swizzle<T, A, B>& ab) ADDRSPACE2 \
-: vec(vec(ab)) {} \
-  
-  VEC_SWIZZLE_ALL_CTORS(VEC2_CTORS);
 };
 
 template <typename T>
@@ -343,7 +376,14 @@ VEC3_SWIZZLE_GROUP(2, 0, 1, z, x, y, b, r, g); \
     VEC3_ALL_SWIZZLES;
   };
 public:
-  vec() {}
+#define VEC3_COPY_CTOR(ADDRSPACE) \
+vec(const ADDRSPACE vec& abc) \
+{ \
+  xyz = abc; \
+} \
+
+  VEC_SIMPLE_CTORS(VEC3_COPY_CTOR);
+  
   vec(T all)
   {
     x = y = z = all;
@@ -354,34 +394,17 @@ public:
     y = b;
     z = c;
   }
-
-#define VEC3_CTORS(ADDRSPACE1, ADDRSPACE2) \
-vec(const ADDRSPACE1 vec<T, 3>& abc) ADDRSPACE2 \
-{ \
-  xyz = abc; \
-} \
-vec(const ADDRSPACE1 vec<T, 2>& ab, T c) ADDRSPACE2 \
-{\
-  xy = ab; \
-  z = c; \
-}\
-vec(T a, const ADDRSPACE1 vec<T, 2>& bc) ADDRSPACE2 \
-{\
-  x = a; \
-  yz = bc; \
-}\
-\
-template <uint A, uint B, uint C> \
-vec(const ADDRSPACE1 vec3_swizzle<T, A, B, C>& abc) ADDRSPACE2 \
-: vec(vec(abc)) {} \
-template <uint A, uint B> \
-vec(const ADDRSPACE1 vec2_swizzle<T, A, B>& ab, T c) ADDRSPACE2 \
-: vec(vec(ab, c)) {} \
-template <uint B, uint C> \
-vec(T a, const ADDRSPACE1 vec2_swizzle<T, B, C>& bc) ADDRSPACE2 \
-: vec(vec(a, bc)) {} \
   
-  VEC_SWIZZLE_ALL_CTORS(VEC3_CTORS);
+  vec(vec<T, 2> ab, T c)
+  {
+    xy = ab;
+    z = c;
+  }
+  vec(T a, vec<T, 2> bc)
+  {
+    x = a;
+    yz = bc;
+  }
 };
 
 template <typename T>
@@ -424,11 +447,14 @@ VEC4_SWIZZLE_GROUP(3, 0, 1, 2, w, x, y, z, a, r, g, b); \
     VEC4_ALL_SWIZZLES
   };
 public:
-  // TODO: Templatize all constructors like this.
-  vec() thread = default;
-  vec() device = default;
-  vec() constant = default;
-  vec() threadgroup = default;
+#define VEC4_COPY_CTOR(ADDRSPACE) \
+vec(const ADDRSPACE vec& abcd) \
+{ \
+  xyzw = abcd; \
+} \
+
+  VEC_SIMPLE_CTORS(VEC4_COPY_CTOR);
+  
   vec(T all)
   {
     x = y = z = w = all;
@@ -440,6 +466,18 @@ public:
     z = c;
     w = d;
   }
+  
+  vec(vec<T, 3> abc, T d)
+  {
+    xyz = abc;
+    w = d;
+  }
+  vec(T a, vec<T, 3> bcd)
+  {
+    x = a;
+    yzw = bcd;
+  }
+  
   vec(vec<T, 2> ab, vec<T, 2> cd)
   {
     x = ab.x;
@@ -447,109 +485,25 @@ public:
     z = cd.x;
     w = cd.y;
   }
-
-#define VEC4_CTORS(ADDRSPACE1, ADDRSPACE2) \
-vec(const ADDRSPACE1 vec<T, 4>& abcd) ADDRSPACE2 \
-{ \
-  xyzw = abcd; \
-} \
-vec(const ADDRSPACE1 vec<T, 3>& abc, T d) ADDRSPACE2 \
-{ \
-  xyz = abc; \
-  w = d;\
-} \
-vec(T a, const ADDRSPACE1 vec<T, 3>& bcd) ADDRSPACE2 \
-{ \
-  x = a; \
-  yzw = bcd;\
-} \
-vec(const ADDRSPACE1 vec<T, 2>& ab, T c, T d) ADDRSPACE2 \
-{ \
-  xy = ab; \
-  z = c; \
-  w = d;\
-} \
-vec(T a, const ADDRSPACE1 vec<T, 2>& bc, T d) ADDRSPACE2 \
-{ \
-  x = a; \
-  yz = bc; \
-  w = d;\
-} \
-vec(T a, T b, const ADDRSPACE1 vec<T, 2>& cd) ADDRSPACE2 \
-{ \
-  x = a; \
-  y = b; \
-  zw = cd;\
-} \
-\
-template <uint A, uint B, uint C, uint D> \
-vec(const ADDRSPACE1 vec4_swizzle<T, A, B, C, D>& abcd) ADDRSPACE2 \
-: vec(vec(abcd)) {} \
-template <uint A, uint B, uint C> \
-vec(const ADDRSPACE1 vec3_swizzle<T, A, B, C>& abc, T d) ADDRSPACE2 \
-: vec(vec(abc, d)) {} \
-template <uint B, uint C, uint D> \
-vec(T a, const ADDRSPACE1 vec3_swizzle<T, B, C, D>& bcd) ADDRSPACE2 \
-: vec(vec(a, bcd)) {} \
-template <uint A, uint B, uint C, uint D> \
-vec(const ADDRSPACE1 vec2_swizzle<T, A, B>& ab, T c, T d) ADDRSPACE2 \
-: vec(vec(ab, c, d)) {} \
-template <uint A, uint B, uint C, uint D> \
-vec(T a, const ADDRSPACE1 vec2_swizzle<T, C, D>& bc, T d) ADDRSPACE2 \
-: vec(vec(a, bc, d)) {} \
-template <uint A, uint B, uint C, uint D> \
-vec(T a, T b, const ADDRSPACE1 vec2_swizzle<T, C, D>& cd) ADDRSPACE2 \
-: vec(vec(a, b, cd)) {} \
-
-  VEC_SWIZZLE_ALL_CTORS(VEC4_CTORS);
-  
-  // TODO: Hoist this to the other macros that declare more addrspaces.
-  
-
-  
-
-//  vec(vec<T, 2> ab, vec<T, 2> cd) thread
-//  {
-//    x = ab.x;
-//    y = ab.y;
-//    z = cd.x;
-//    w = cd.y;
-//  }
-  
-
-
-//
-//#define VEC4_22_CTOR(ADDRSPACE1, ADDRSPACE2, ADDRSPACE3) \
-//vec(const ADDRSPACE1 vec<T, 2>& ab, const ADDRSPACE2 vec<T, 2>& cd) ADDRSPACE3 \
-//{ \
-//  x = ab.x; \
-//  y = ab.y; \
-//  z = cd.x; \
-//  w = cd.y; \
-//} \
-//template <uint A, uint B, uint C, uint D> \
-//vec(const ADDRSPACE1 vec2_swizzle<T, A, B>& ab, const ADDRSPACE2 vec2_swizzle<T, C, D>& cd) ADDRSPACE3 \
-//: vec(vec(ab, cd)) {} \
-//
-//#define VEC4_22_CTORS_INTERNAL2(ADDRSPACE2, ADDRSPACE3) \
-//VEC4_22_CTOR(thread, ADDRSPACE2, ADDRSPACE3); \
-//VEC4_22_CTOR(device, ADDRSPACE2, ADDRSPACE3); \
-//VEC4_22_CTOR(constant, ADDRSPACE2, ADDRSPACE3); \
-//
-//#define VEC4_22_CTORS_INTERNAL1(ADDRSPACE3) \
-//VEC4_22_CTORS_INTERNAL2(thread, ADDRSPACE3); \
-//VEC4_22_CTORS_INTERNAL2(device, ADDRSPACE3); \
-//VEC4_22_CTORS_INTERNAL2(constant, ADDRSPACE3); \
-//
-//#define VEC4_22_ALL_CTORS() \
-//VEC4_22_CTORS_INTERNAL1(thread); \
-//VEC4_22_CTORS_INTERNAL1(device); \
-//VEC4_22_CTORS_INTERNAL1(constant); \
-//
-//  VEC4_22_ALL_CTORS();
+  vec(vec<T, 2> ab, T c, T d)
+  {
+    xy = ab;
+    z = c;
+    w = d;
+  }
+  vec(T a, vec<T, 2> bc, T d)
+  {
+    x = a;
+    yz = bc;
+    w = d;
+  }
+  vec(T a, T b, vec<T, 2> cd)
+  {
+    x = a;
+    y = b;
+    zw = cd;
+  }
 };
-
-// TODO: Undef all VEC4_CTORS, VEC4_VEC2_VEC2_CTOR(S)(WRAPPER), etc.
 
 #undef VEC4_ALL_SWIZZLES
 #undef VEC3_ALL_SWIZZLES
@@ -561,8 +515,10 @@ vec(T a, T b, const ADDRSPACE1 vec2_swizzle<T, C, D>& cd) ADDRSPACE2 \
 #undef VEC2_SWIZZLE_GROUP
 #undef VEC1_SWIZZLE_GROUP
 
+#undef VEC_SWIZZLE_CONVERT_OPERATORS
 #undef VEC_SWIZZLE_ALL_CTORS_INTERNAL
 #undef VEC_SWIZZLE_ALL_CTORS
+#undef VEC_SIMPLE_CTORS
 
 // Bypass the name collision between `metal::vec` and `metal_float64::vec`.
 
