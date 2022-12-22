@@ -8,7 +8,6 @@
 #include <metal_stdlib>
 #include <metal_float64>
 using namespace metal;
-using namespace metal_float64;
 
 kernel void testAtomicsCompile(
   device void *input [[buffer(0)]],

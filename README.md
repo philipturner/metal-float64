@@ -23,21 +23,41 @@ Locate `.build/MetalFloat64` inside the repo's directory. That folder contains t
 
 ```bash
 ls .build/MetalFloat64/usr/lib
+# Expected:
+# libMetalAtomic64.dylib
+# libMetalAtomic64.metallibsym
+# libMetalFloat64.metallib
+# libMetalFloat64.metallibsym
+
 ls .build/MetalFloat64/usr/include
-# Expected output:
-# libMetalFloat64.metallib  libMetalFloat64.metallibsym
-# MetalFloat64.h
+# Expected:
+# metal_float64
+# MetalAtomic64/MetalAtomic64.h
+
+ls .build/MetalFloat64/usr/placeholders
+# Expected:
+# libMetalAtomic64.metallib
 ```
 
-TODO: Instructions for linking the library from command-line, and how to use when compiling sources at runtime. Make a CPU library for packaging the Float64 metallibs in SwiftPM and decoding reduced-precision types on the CPU. Set the call stack depth in your compute pipelines to X amount.
+TODO: Instructions for linking the library from command-line, and how to use when compiling sources at runtime. Make a CPU library for encapsulating the Float64 metallibs (only for SwiftPM) and decoding reduced-precision types on the host. Set the call stack depth in your compute pipelines to X amount.
+
+```metal
+// Include MetalFloat64 after the Metal Standard Library.
+#include <metal_stdlib>
+#include <metal_float64>
+using namespace metal;
+```
 
 TODO: How to initialize the libMetalAtomic64. Warn that you must call `useResource(_:usage:)` on the lock buffer, otherwise half of the GPU will freeze and (a) force the user to restart their computer or (b) silently consume 1/2 the GPU's maximum TDP in the background until a restart.
 
-```metal
-#include <metal_stdlib>
-#include <MetalFloat64/MetalFloat64.h>
-using namespace metal;
-using namespace metal_float64;
+```swift
+// Initialize libMetalAtomic64 from Swift.
+
+```
+
+```c
+// Initialize libMetalAtomic64 from C/C++.
+
 ```
 
 This library redefines the `double` keyword using a compiler macro, making it legal to use in MSL. The keyword is a typealias of one of the precisions below, which can be chosen through a compiler flag. The compiler flag you easily switch an entire code base to a different precision, and see how it affects performance. Vectorized variants of underlying precisions use `vec<float64_t, 2>` syntax. The keywords `double2`, `double3`, and `double4` are redefined as typealiases of such vectors.
@@ -53,7 +73,7 @@ The initial implementation of this library may only support 64-bit add, multiply
 
 Furthermore, the library will emulate 64-bit integer atomics by randomly assigning locks to a certain memory address. The client must allocate a lock buffer, then enter it when loading their GPU binary at runtime. At runtime, a carefully selected series of 32-bit atomics performs a load, store, or cmpxchg without data races. i64/u64/f64 atomics will be implemented on top of these primitives, matching the capabilities of other data types in the MSL specification. Atomics will only be available through function calls.
 
-Some Metal language types, such as matrices and packed vectors, are not supported. These have little utility, but would require investing significant time to implement. Users can easily create custom data structures for small matrix multiplications, or for packing double-precision vectors into 8-byte alignments. `double` vectors also have a quirk that differentiates them from `float`:
+Small matrix types, such as `double4x4`, are not yet implemented. These have little utility, but implementing them requires significant effort. Users can perform matrix multiplications by multiplying each column of the matrix separately. Regarding vector types, `vec<double, N>` has a quirk that differentiates it from `vec<float, N>`:
 
 ```metal
 float3 fvector = ...;
@@ -79,4 +99,4 @@ dvector = (dvector.xyz).xyz;
 
 This project uses ideas from [SoftFloat](https://github.com/ucb-bar/berkeley-softfloat-3) and [LLVM](https://github.com/llvm/llvm-project/blob/2e999b7dd1934a44d38c3a753460f1e5a217e9a5/compiler-rt/lib/builtins/fp_lib.h) to emulate IEEE-compliant FP64 math through 32-bit integer operations.
 
-The header also duplicates some code from the Metal Standard Library, in order to create a public API for `double` that matches other types. Locations of copied code are not explicitly outlined, so assume all header files contain snippets of the MSLib. Apple owns the copyright to these code snippets.
+The library header duplicates parts of the Metal Standard Library, in order to create a public API for `double` that matches `float`. Locations of copied code are not explicitly outlined, so assume any `.h` file contains such code. Apple owns the copyright to all instances of copied code.

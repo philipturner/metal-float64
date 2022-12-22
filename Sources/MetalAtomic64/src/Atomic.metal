@@ -86,6 +86,7 @@ INTERNAL_INLINE device atomic_uint* get_lock(device ulong* object) {
   uint lower_bits = reinterpret_cast<thread uint2&>(wrapper)[0];
   uint hash = extract_bits(lower_bits, 1, 18) ^ (0x5A39 << 2);
   
+  // TODO: Explicitly, OR only the lower 32 bits (this currently sign extends).
   auto this_address = lock_buffer_address | hash;
   auto lock_ref = reinterpret_cast<thread LockBufferAddressWrapper&>
      (this_address);

@@ -1,9 +1,16 @@
-// MARK: - ExtendedVector.h
+// MARK: - Vector.h
 
 // Vector types based on the default precision.
 #define double2 vec<double, 2>
 #define double3 vec<double, 3>
 #define double4 vec<double, 4>
+#define packed_double2 packed_vec<double, 2>
+#define packed_double3 packed_vec<double, 3>
+#define packed_double4 packed_vec<double, 4>
+
+// TODO: Support subscripts
+// TODO: Finish implementing packed_vec
+// TODO: Make packed_vec
 
 namespace metal_float64
 {
@@ -11,13 +18,15 @@ namespace metal_float64
 // around this.
 // https://stackoverflow.com/a/51822107
 
-// TODO: support thread, device, constant, threadgroup, thread_imageblock, ray_data, object_data address spaces
-// TODO: support subscripts
-
-// TODO: See if there's a way to statically check a vector's length, and force
-// negative vectors to not compile.
 template <typename T, uint N, typename _E = void>
 class vec {
+  // Must be public as an internal implementation detail, but the user should
+  // never access this property.
+  T _data[N];
+};
+
+template <typename T, uint N, typename _E = void>
+class packed_vec {
   // Must be public as an internal implementation detail, but the user should
   // never access this property.
   T _data[N];
@@ -28,14 +37,14 @@ class vec {
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warray-bounds"
 
-#define VEC_SIMPLE_CTORS(COPY_CTOR) \
-vec() thread = default; \
-vec() device = default; \
-vec() constant = default; \
-vec() threadgroup = default; \
-vec() threadgroup_imageblock = default; \
-vec() ray_data = default; \
-vec() object_data = default; \
+#define VEC_SIMPLE_CTORS(TYPE, COPY_CTOR) \
+TYPE() thread = default; \
+TYPE() device = default; \
+TYPE() constant = default; \
+TYPE() threadgroup = default; \
+TYPE() threadgroup_imageblock = default; \
+TYPE() ray_data = default; \
+TYPE() object_data = default; \
 \
 COPY_CTOR(thread); \
 COPY_CTOR(device); \
@@ -74,7 +83,7 @@ OPERATOR(object_data); \
 
 namespace
 {
-template <typename T, uint A, typename vec_type = vec<T, 1>>
+template <typename T, uint A, typename vec_type = vec<T, 1>, typename packed_vec_type = packed_vec<T, 1>>
 class vec1_swizzle
 {
   // Must be public as an internal implementation detail, but the user should
@@ -122,7 +131,7 @@ vec_type operator=(const ADDRSPACE1 vec_type& vec) ADDRSPACE2 { \
   }
 };
 
-template <typename T, uint A, uint B, typename vec_type = vec<T, 2>>
+template <typename T, uint A, uint B, typename vec_type = vec<T, 2>, typename packed_vec_type = packed_vec<T, 2>>
 class vec2_swizzle
 {
   // Must be public as an internal implementation detail, but the user should
@@ -149,7 +158,7 @@ vec_type operator=(const ADDRSPACE1 vec_type& vec) ADDRSPACE2 { \
   VEC_SWIZZLE_CONVERT_OPERATORS(VEC2_SWIZZLE_CONVERT_OPERATOR);
 };
 
-template <typename T, uint A, uint B, uint C, typename vec_type = vec<T, 3>>
+template <typename T, uint A, uint B, uint C, typename vec_type = vec<T, 3>, typename packed_vec_type = packed_vec<T, 3>>
 class vec3_swizzle
 {
   // Must be public as an internal implementation detail, but the user should
@@ -176,7 +185,7 @@ vec_type operator=(const ADDRSPACE1 vec_type& vec) ADDRSPACE2 { \
   VEC_SWIZZLE_CONVERT_OPERATORS(VEC3_SWIZZLE_CONVERT_OPERATOR);
 };
 
-template <typename T, uint A, uint B, uint C, uint D, typename vec_type = vec<T, 4>>
+template <typename T, uint A, uint B, uint C, uint D, typename vec_type = vec<T, 4>, typename packed_vec_type = packed_vec<T, 4>>
 class vec4_swizzle
 {
   // Must be public as an internal implementation detail, but the user should
@@ -270,8 +279,7 @@ vec4_swizzle<T, i, l, k, j> x##w##z##y, r##a##b##g; \
 
 } // namespace
 
-// MARK: - Class Template Specializations
-
+// MARK: - Extended Vectors
 
 template <typename T>
 class vec<T, 1>
@@ -296,7 +304,7 @@ vec(const ADDRSPACE vec& a)  \
   x = a; \
 } \
 
-  VEC_SIMPLE_CTORS(VEC1_COPY_CTOR);
+  VEC_SIMPLE_CTORS(vec, VEC1_COPY_CTOR);
   
   vec(T a)
   {
@@ -337,7 +345,7 @@ vec(const ADDRSPACE vec& ab) \
   xy = ab; \
 } \
 
-  VEC_SIMPLE_CTORS(VEC2_COPY_CTOR);
+  VEC_SIMPLE_CTORS(vec, VEC2_COPY_CTOR);
   
   vec(T all)
   {
@@ -382,7 +390,7 @@ vec(const ADDRSPACE vec& abc) \
   xyz = abc; \
 } \
 
-  VEC_SIMPLE_CTORS(VEC3_COPY_CTOR);
+  VEC_SIMPLE_CTORS(vec, VEC3_COPY_CTOR);
   
   vec(T all)
   {
@@ -453,7 +461,7 @@ vec(const ADDRSPACE vec& abcd) \
   xyzw = abcd; \
 } \
 
-  VEC_SIMPLE_CTORS(VEC4_COPY_CTOR);
+  VEC_SIMPLE_CTORS(vec, VEC4_COPY_CTOR);
   
   vec(T all)
   {

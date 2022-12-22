@@ -1,5 +1,5 @@
 //
-//  ExtendedVectorTests.metal
+//  VectorTests.metal
 //  
 //
 //  Created by Philip Turner on 11/22/22.
@@ -8,7 +8,6 @@
 #include <metal_stdlib>
 #include <metal_float64>
 using namespace metal;
-using namespace metal_float64;
 
 // TODO: Run the test function that tests address spaces.
 
