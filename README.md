@@ -67,7 +67,7 @@ This library redefines the `double` keyword using a compiler macro, making it le
 - `float43_t` - GPU-friendly format with 15 bits exponent and 32 bits mantissa, 17 bits wasted. Must be converted to/from FP64 on the CPU. Throughput ratio is ~1:25-30 (FMA), ~1:10 (ADD) compared to FP32.
 - The lower precisions always round ties to zero, do not support denormals, and any instance of INF or NAN produces undefined behavior.
 
-TODO: `float32_t` for validation and `float32x2_t` for double-single approach.
+TODO: `float32_t` consuming 8 bytes for validation, `float32x2_t` for double-single approach.
 
 ## Features
 
