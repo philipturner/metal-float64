@@ -167,7 +167,8 @@ enum __metal_atomic64_type_id: ushort {
   u64 = 1, // unsigned long
   f64 = 2, // IEEE double precision
   f59 = 3, // 59-bit reduced precision
-  f43 = 4 // 43-bit reduced precision
+  f43 = 4, // 43-bit reduced precision
+  f32x2 = 5, // double-single approach
 };
 
 // Entering an invalid operation ID causes undefined behavior at runtime.
@@ -177,7 +178,7 @@ enum __metal_atomic64_operation_id: ushort {
   xchg = 2, // atomic_exchange_explicit
   logical_and = 3, // atomic_fetch_and_explicit
   logical_or = 4, // atomic_fetch_or_explicit
-  logical_xor = 5 // atomic_fetch_xor_explicit
+  logical_xor = 5, // atomic_fetch_xor_explicit
 };
 
 // TODO: You can't just implement atomics through a threadgroup barrier. In
