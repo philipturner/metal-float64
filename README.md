@@ -20,7 +20,11 @@ The inner core reaches from zero to half the radius. It contains a shared, radia
 
 Notice the specs. This thing has less logic gates than the Intel 4004 had transistors. It clocks at 100 MHz and streams 10^4-10^5 bits/second from onboard sensors. That is over 1000 elementary operations for each bit. The oxyglucose engine provides 1 trillionth of a watt of power, expending ~1000 kT every operation. Notice another design aspect: read-only storage dominates the volume. Executable sizes range in several kilobytes. It took the greater part of a year to settle on this design.
 
-Even with ridiculously few hardware capabilities, the robot can multiply two double-precision numbers. Doing so takes something on the order of 64x64 clock cycles, 40 microseconds, 4 million kT. However, the greatest bottleneck is executable size. Transferring data from storage tapes to the onboard instruction cache incurs severe latency. This may be an extreme proof-of-concept, but even a 1-bit Turing complete computer can perform 64-bit math. The Apple GPU has more capabilities than a nanocomputer, letting it emulate FP64 with many fewer instructions. Hardware double precision is not needed. In fact, software approaches have the same performance as native FP64 on AMD RDNA 3 and Nvidia Ampere.
+---
+
+Even with ridiculously few hardware capabilities, the nanobot can multiply two double-precision numbers. Doing so takes something on the order of 64x64 clock cycles, 40 microseconds, 4 million kT. However, the greatest bottleneck is executable size. Transferring data from storage tapes to the onboard instruction cache incurs severe latency.
+
+This may be an extreme proof-of-concept, but even a 1-bit Turing complete computer can perform 64-bit math. The Apple GPU has more capabilities than a nanocomputer, letting it emulate FP64 with many fewer instructions. Hardware double precision is not needed. In fact, software approaches have the same performance as native FP64 on AMD RDNA 3 and Nvidia Ampere.
 
 ## Usage
 
