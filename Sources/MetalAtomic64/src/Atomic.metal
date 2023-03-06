@@ -169,6 +169,7 @@ enum __metal_atomic64_type_id: ushort {
   f59 = 3, // 59-bit reduced precision
   f43 = 4, // 43-bit reduced precision
   f32x2 = 5, // double-single approach
+  f32 = 6, // software-emulated single precision for validation
 };
 
 // Entering an invalid operation ID causes undefined behavior at runtime.
