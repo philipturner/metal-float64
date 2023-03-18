@@ -1,6 +1,8 @@
 # Metal Float64
 
 > Still in the planning stage - this is not a finished library!
+>
+> GPT-4 may make this library much easier to finish. See the gist [here](https://gist.github.com/philipturner/0d47f5e925bb3a9568d3c4d6dca19a1b).
 
 Emulating double-precision arithmetic on Apple GPUs, with full IEEE compliance. Based on theoretical estimates, additions and multiplications will have 1/32-1/64 the throughput of their 32-bit counterparts. This is the same throughput ratio as native FP64 on recent NVIDIA GPUs.
 
