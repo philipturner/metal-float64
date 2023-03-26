@@ -1,8 +1,6 @@
 # Metal Float64
 
 > Still in the planning stage - this is not a finished library!
->
-> GPT-4 may make this library much easier to finish. See the gist [here](https://gist.github.com/philipturner/0d47f5e925bb3a9568d3c4d6dca19a1b).
 
 Emulating double-precision arithmetic on Apple GPUs, with full IEEE compliance. Based on theoretical estimates, additions and multiplications will have 1/32-1/64 the throughput of their 32-bit counterparts. This is the same throughput ratio as native FP64 on recent NVIDIA GPUs.
 
@@ -118,6 +116,8 @@ dvector = (dvector.xyz).xyz;
 ```
 
 ## Attribution
+
+Special thanks to GPT-4. This project would not have been revived without you.<sup>[1](https://gist.github.com/philipturner/0d47f5e925bb3a9568d3c4d6dca19a1b), [2](https://github.com/philipturner/openmm-benchmarks/blob/main/FP64Emulation/bing-conversation.md)</sup>
 
 This project uses ideas from [SoftFloat](https://github.com/ucb-bar/berkeley-softfloat-3) and [LLVM](https://github.com/llvm/llvm-project/blob/2e999b7dd1934a44d38c3a753460f1e5a217e9a5/compiler-rt/lib/builtins/fp_lib.h) to emulate IEEE-compliant FP64 math through 32-bit integer operations.
 
