@@ -83,6 +83,13 @@ This library redefines the `double` keyword using a compiler macro, making it le
 
 TODO: Explain that we use IEEE FP64 only for API compatibility, but internally convert to e8m48 for transcendentals. To preserve the dynamic range, add an extra check to `float64_t`-interfaced functions that scales the numbers during decoding. Create a table specifying error ranges, compare to MSL and OpenCL. Document the throughput ratio to GPU FP32 and multicore CPU FP64.
 
+## Performance
+
+The following table demonstrates performance of FP64 emulation. The reference system has an 8-core 3.064 GHz ARM CPU with four 128-bit vector ALUs per core. It has a 32-core 1.296 GHz Apple GPU with four 1024-bit vector ALUs per core. eFP64(1) describes performance of `float64_t`, assuming an adversarial scenario where each SIMD-group contains a thread with a random edge case. eFP64(2) describes performance with edge case checking disabled. The table shows scalar giga-operations/second, counting FFMA as two operations.
+
+| Operation | CPU FP64 | GPU eFP64(1) | GPU eFP64(2) | GPU FP32x2 | GPU FP32 |
+| --------- | -------- | ------------ | ------------ | ---------- | -------- |
+
 ## Features
 
 The initial implementation of this library may only support 64-bit add, multiply, and FMA. More complex math functions may roll out later, including division and square root, then finally transcendentals. Complex functions will only be available through function calls. The library will also provide trivial operations like absolute value and negate. These are so small they only occur through inlining.
