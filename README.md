@@ -85,7 +85,7 @@ TODO: Explain that we use IEEE FP64 only for API compatibility, but internally c
 
 ## Performance
 
-The following table demonstrates performance of FP64 emulation. The reference system has an 8-core 3.064 GHz ARM CPU with four 128-bit vector ALUs per core. It has a 32-core 1.296 GHz Apple GPU with four 1024-bit vector ALUs per core. eFP64 represents `float64_t` with edge case checking disabled. The table shows scalar giga-operations/second, counting FFMA and FCMPSEL as two operations.
+The following table shows maximum theoretical performance of FP64 emulation. The reference system has an 8-core 3.064 GHz ARM CPU with four 128-bit vector ALUs per core. It has a 32-core 1.296 GHz Apple GPU with four 1024-bit vector ALUs per core. eFP64 represents `float64_t` with edge case checking disabled. The table shows scalar giga-operations/second, counting FFMA and FCMPSEL as two operations.
 
 <!--
 ```
