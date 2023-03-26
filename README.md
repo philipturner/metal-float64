@@ -87,6 +87,8 @@ This library redefines the `double` keyword using a compiler macro, making it le
 
 TODO: `float32_t` consuming 8 bytes for validation, `float32x2_t` for double-single approach.
 
+TODO: Table of errors for transcendental functions, explain why not Khronos compliant.
+
 ## Features
 
 The initial implementation of this library may only support 64-bit add, multiply, and FMA. More complex math functions may roll out later, including division and square root, then finally transcendentals. Complex functions will only be available through function calls. The library will also provide trivial operations like absolute value and negate. These are so small they only occur through inlining.
