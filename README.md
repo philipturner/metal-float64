@@ -87,8 +87,8 @@ TODO: Explain that we use IEEE FP64 only for API compatibility, but internally c
 
 The following table demonstrates performance of FP64 emulation. The reference system has an 8-core 3.064 GHz ARM CPU with four 128-bit vector ALUs per core. It has a 32-core 1.296 GHz Apple GPU with four 1024-bit vector ALUs per core. eFP64 represents `float64_t` with edge case checking disabled. The table shows scalar giga-operations/second, counting FFMA and FCMPSEL as two operations.
 
-| Operation | CPU FP64 | GPU eFP64 | GPU FP32x2 | GPU FP32 |
-| --------- | -------- | ------------ | ---------- | -------- |
+| Operation | CPU FP64 | GPU eFP64 | GPU FP32x2 | GPU FP32 (Fast) |
+| --------- | -------- | --------- | ---------- | -------- |
 | FFMA    | 392 | | | 10616 |
 | FADD    | 196 | | | 5308 |
 | FMUL    | 196 | | | 5308 |
@@ -106,6 +106,28 @@ The following table demonstrates performance of FP64 emulation. The reference sy
 | FTANH   | | | | |
 | FERF    | | | | |
 | FERFC   | | | | |
+
+## Precision
+
+The following table shows maximum floating point error in `ulp`, where IEEE double precision is zero.
+
+| Operation | OpenCL FP64 | FP64/FP32x2 | Metal FP32 (Precise) | Metal FP32 (Fast) |
+| --------- | ----------- | ----------- | -------------------- | ----------- |
+| FFMA |
+| FADD |
+| FMUL |
+| FRECIP |
+| FDIV |
+| FSQRT |
+| FSQRT |
+| FEXP |
+| FLOG |
+| FSIN |
+| FSINH |
+| FTAN |
+| FTANH |
+| FERF |
+| FERFC |
 
 ## Features
 
