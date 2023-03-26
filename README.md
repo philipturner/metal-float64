@@ -109,25 +109,26 @@ The following table demonstrates performance of FP64 emulation. The reference sy
 
 ## Precision
 
-The following table shows maximum floating point error in `ulp`, where IEEE double precision is zero.
+The following table shows maximum floating point error in `ulp`, relative to perfect IEEE double precision.
 
-| Operation | OpenCL FP64 | FP64/FP32x2 | Metal FP32 (Precise) | Metal FP32 (Fast) |
+| Operation | OpenCL FP64 | eFP64/FP32x2 | Metal FP32 (Precise) | Metal FP32 (Fast) |
 | --------- | ----------- | ----------- | -------------------- | ----------- |
-| FFMA |
-| FADD |
-| FMUL |
-| FRECIP |
-| FDIV |
-| FSQRT |
-| FSQRT |
-| FEXP |
-| FLOG |
-| FSIN |
-| FSINH |
-| FTAN |
-| FTANH |
-| FERF |
-| FERFC |
+| FFMA   | 0 | ??? + 5 | 0 + 29 | 0 + 29 |
+| FADD   | 0 | ??? + 5 | 0 + 29 | 0 + 29 |
+| FMUL   | 0 | ??? + 5 | 0 + 29 | 0 + 29 |
+| FMAX   | 0 | ??? + 5 | 0 + 29 | 0 + 29 |
+| FRECIP | 0 | ??? + 5 | 0 + 29 | 1 + 29 |
+| FDIV   | 0 | ??? + 5 | 0 + 29 | 2.5 + 29 |
+| FRSQRT | 2 | ??? + 5 | 0 + 29 | 2 + 29 |
+| FSQRT  | 0 | ??? + 5 | 0 + 29 | ??? + 29 |
+| FEXP   | 3 | ??? + 5 | 4 + 29 | infinity |
+| FLOG   | 3 | ??? + 5 | 4 + 29 | &ge;3 + 29 |
+| FSIN   | 4 | ??? + 5 | 4 + 29 | &ge;11 + 29 |
+| FSINH  | 4 | ??? + 5 | 4 + 29 | ??? + 29 |
+| FTAN   | 5 | ??? + 5 | 6 + 29 | ??? + 29 |
+| FTANH  | 5 | ??? + 5 | 5 + 29 | ??? + 29 |
+| FERF   | 16 | ??? + 5 | ??? + 29 |
+| FERFC  | 16 | ??? + 5 | ??? + 29 |
 
 ## Features
 
