@@ -87,6 +87,28 @@ TODO: Explain that we use IEEE FP64 only for API compatibility, but internally c
 
 The following table demonstrates performance of FP64 emulation. The reference system has an 8-core 3.064 GHz ARM CPU with four 128-bit vector ALUs per core. It has a 32-core 1.296 GHz Apple GPU with four 1024-bit vector ALUs per core. eFP64 represents `float64_t` with edge case checking disabled. The table shows scalar giga-operations/second, counting FFMA and FCMPSEL as two operations.
 
+<!--
+```
+Note to self: FP32/integer/conditional shader instructions
+.init(adding:with:) - 6
+.init(multiplying:with:) - 2
+FP64.normalized() - 3
+FP32.normalized() - 1
+
+FP64+FP64=FP64 - 20
+FP64+FP64=FP32 - 18
+FP64+FP32=FP64 - 10
+FP64+FP32=FP32 - 8
+FP32+FP32=FP64 - 6
+
+FP64*FP64=FP64 - 7
+FP64*FP64=FP32 - 5
+FP64*FP32=FP64 - 6
+FP64*FP32=FP32 - 4
+FP32*FP32=FP64 - 2
+```
+-->
+
 | Operation | CPU FP64 | GPU eFP64 | GPU FP32x2 | GPU FP32 (Fast) |
 | --------- | -------- | --------- | ---------- | -------- |
 | FFMA    | 392 | | | 10616 |
