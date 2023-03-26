@@ -95,6 +95,9 @@ Note to self: FP32/integer/conditional shader instructions
 FP64.normalized() - 3
 FP32.normalized() - 1
 
+FP64>FP64 - 3
+FP64>FP64+CMPSEL - 5
+
 FP64+FP64=FP64 - 20
 FP64+FP64=FP32 - 18
 FP64+FP32=FP64 - 10
@@ -120,15 +123,15 @@ FP64.rsqrt() - 30 + 1 (rsqrt)
 
 | Operation | CPU FP64 | GPU eFP64 | GPU FP32x2 | GPU FP32 (Fast) |
 | --------- | -------- | --------- | ---------- | -------- |
-| FFMA    | 392 | | | 10616 |
-| FADD    | 196 | | | 5308 |
-| FMUL    | 196 | | | 5308 |
-| FCMPSEL | 196 | | | 10616 |
-| FMAX    | 196 | | | 5308 |
-| FRECIP  | 49 | | | 884 |
-| FDIV    | 49 | | | 884 |
-| FRSQRT  | 49 | | | 663 |
-| FSQRT   | 49 | | | 663 |
+| FFMA    | 392 | | 393 | 10616 |
+| FADD    | 196 | | 265 | 5308 |
+| FMUL    | 196 | | 768 | 5308 |
+| FCMPSEL | 196 | | 2123 | 10616 |
+| FCMP    | 196 | | 1769 | 5308 |
+| FRECIP  | 49 | | 196 | 884 |
+| FDIV    | 49 | | 136 | 884 |
+| FRSQRT  | 49 | | 176 | 663 |
+| FSQRT   | 49 | | 156 | 663 |
 | FEXP    | | | | 1327 |
 | FLOG    | | | | 1327 |
 | FSIN    | | | | 379 |
@@ -147,7 +150,6 @@ The following table shows maximum floating point error in `ulp`, relative to per
 | FFMA   | 0 | ??? + 5 | 0 + 29 | 0 + 29 |
 | FADD   | 0 | ??? + 5 | 0 + 29 | 0 + 29 |
 | FMUL   | 0 | ??? + 5 | 0 + 29 | 0 + 29 |
-| FMAX   | 0 | ??? + 5 | 0 + 29 | 0 + 29 |
 | FRECIP | 0 | ??? + 5 | 0 + 29 | 1 + 29 |
 | FDIV   | 0 | ??? + 5 | 0 + 29 | 2.5 + 29 |
 | FRSQRT | 2 | ??? + 5 | 0 + 29 | 2 + 29 |
