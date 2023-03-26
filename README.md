@@ -81,7 +81,7 @@ This library redefines the `double` keyword using a compiler macro, making it le
 - `float64_t` - IEEE 64-bit floating point with 11 bits exponent and 1+52 bits mantissa, compatible with CPU. Preserves API compatibility with existing GPU libraries. Rounds ties to even, preserves denormals, and correctly handles INF/NAN.
 - `float32x2_t` - Double-single approach with 8 bits exponent and 1+47 bits mantissa. The CPU must explicitly convert to/from `float64_t` before interpreting GPU results. Rounds ties to zero, flushes denormals to zero, INF/NAN causes undefined results.
 
-TODO: Explain that we use IEEE FP64 only for API compatibility, but internally convert to e8m48 for transcendentals. To preserve the dynamic range, add an extra check to `float64_t`-interfaced functions that scales the numbers during decoding. Create a table specifying error ranges like the MSL specification, document the throughput ratio to GPU FP32 and CPU FP64.
+TODO: Explain that we use IEEE FP64 only for API compatibility, but internally convert to e8m48 for transcendentals. To preserve the dynamic range, add an extra check to `float64_t`-interfaced functions that scales the numbers during decoding. Create a table specifying error ranges, compare to MSL and OpenCL. Document the throughput ratio to GPU FP32 and multicore CPU FP64.
 
 ## Features
 
@@ -110,6 +110,8 @@ fvector = (fvector.xyz).xyz;
 dvector = (dvector.xyz).xyz;
 // Workaround: cast to `double3` before swizzling again
 ```
+
+TODO: Modular header-only OpenCL interface for OpenMM, which requires disabling `-cl-no-signed-zeroes`.
 
 ## Attribution
 
