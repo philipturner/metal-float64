@@ -83,9 +83,7 @@ This library redefines the `double` keyword using a compiler macro, making it le
 - `float43_t` - GPU-friendly format with 15 bits exponent and 32 bits mantissa, 17 bits wasted. Must be converted to/from FP64 on the CPU. Throughput ratio is ~1:25-30 (FMA), ~1:10 (ADD) compared to FP32.
 - The lower precisions always round ties to zero, do not support denormals, and any instance of INF or NAN produces undefined behavior.
 
-TODO: `float32_t` consuming 8 bytes for validation, `float32x2_t` for double-single approach.
-
-TODO: Table of errors for transcendental functions, explain why not Khronos compliant.
+TODO: Rewrite this entire section. Remove all the types except `float64_t` and `float32x2_t`. We use IEEE FP64 only for API compatibility, but internally convert to e8m48 for transcendentals. To preserve the dynamic range, add an extra check to `float64_t`-interfaced functions that scales the numbers before decoding. Ties and denormals round to zero, NaNs and infinities are undefined. Create a table specifying error ranges like the MSL specification, document the throughput ratio to GPU FP32 and CPU FP64.
 
 ## Features
 
