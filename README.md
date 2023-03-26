@@ -85,27 +85,27 @@ TODO: Explain that we use IEEE FP64 only for API compatibility, but internally c
 
 ## Performance
 
-The following table demonstrates performance of FP64 emulation. The reference system has an 8-core 3.064 GHz ARM CPU with four 128-bit vector ALUs per core. It has a 32-core 1.296 GHz Apple GPU with four 1024-bit vector ALUs per core. eFP64(1) describes performance of `float64_t`, assuming an adversarial scenario where each SIMD-group contains a thread with each edge case. eFP64(2) describes performance with edge case checking disabled. The table shows scalar giga-operations/second, counting FFMA and FCMPSEL as two operations.
+The following table demonstrates performance of FP64 emulation. The reference system has an 8-core 3.064 GHz ARM CPU with four 128-bit vector ALUs per core. It has a 32-core 1.296 GHz Apple GPU with four 1024-bit vector ALUs per core. eFP64 represents `float64_t` with edge case checking disabled. The table shows scalar giga-operations/second, counting FFMA and FCMPSEL as two operations.
 
-| Operation | CPU FP64 | GPU eFP64(1) | GPU eFP64(2) | GPU FP32x2 | GPU FP32 |
-| --------- | -------- | ------------ | ------------ | ---------- | -------- |
-| FFMA    | 392 | | | | 10616 |
-| FADD    | 196 | | | | 5308 |
-| FMUL    | 196 | | | | 5308 |
-| FCMPSEL | | | | | 10616 |
-| FMAX    | | | | | 5308 |
-| FRECIP  | | | | | 884 |
-| FDIV    | | | | | 884 |
-| FRSQRT  | | | | | 663 |
-| FSQRT   | | | | | 663 |
-| FEXP    | | | | | 1327 |
-| FLOG    | | | | | 1327 |
-| FSIN    | | | | | 379 |
-| FSINH   | | | | | |
-| FTAN    | | | | | 147 |
-| FTANH   | | | | | |
-| FERF    | | | | | |
-| FERFC   | | | | | |
+| Operation | CPU FP64 | GPU eFP64 | GPU FP32x2 | GPU FP32 |
+| --------- | -------- | ------------ | ---------- | -------- |
+| FFMA    | 392 | | | 10616 |
+| FADD    | 196 | | | 5308 |
+| FMUL    | 196 | | | 5308 |
+| FCMPSEL | 196 | | | 10616 |
+| FMAX    | 196 | | | 5308 |
+| FRECIP  | 49 | | | 884 |
+| FDIV    | 49 | | | 884 |
+| FRSQRT  | 49 | | | 663 |
+| FSQRT   | 49 | | | 663 |
+| FEXP    | | | | 1327 |
+| FLOG    | | | | 1327 |
+| FSIN    | | | | 379 |
+| FSINH   | | | | |
+| FTAN    | | | | 147 |
+| FTANH   | | | | |
+| FERF    | | | | |
+| FERFC   | | | | |
 
 ## Features
 
