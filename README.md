@@ -136,7 +136,7 @@ FP64.rsqrt() - 30 + 1 (rsqrt)
 | FLOG    | | | | 1327 |
 | FSIN    | | | | 379 |
 | FSINH   | | | | |
-| FTAN    | | | | 147 |
+| FTAN    | | | | 212 |
 | FTANH   | | | | |
 | FERF    | | | | |
 | FERFC   | | | | |
