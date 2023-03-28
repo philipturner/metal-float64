@@ -1,14 +1,14 @@
-# Metal Float64
+# libMetalFloat64
 
 > Still in the planning stage - this is not a finished library!
 
 Emulating double-precision arithmetic on Apple GPUs, with full IEEE compliance. Based on theoretical estimates, additions and multiplications will have 1/32-1/64 the throughput of their 32-bit counterparts. This is the same throughput ratio as native FP64 on recent NVIDIA GPUs.
 
-MetalFloat64 runs fastest on Apple silicon, although it also runs on Intel Macs. For AMD GPUs with hardware double precision, OpenCL provides better performance for FP64-heavy workloads. For Intel GPUs, FP64 emulation will often make GPU slower than multicore CPU, even when 90% of the compute workload is FP32.
+libMetalFloat64 runs fastest on Apple silicon, although it also runs on Intel Macs. For AMD GPUs with hardware double precision, OpenCL provides better performance for FP64-heavy workloads. For Intel GPUs, FP64 emulation will often make GPU slower than multicore CPU, even when 90% of the compute workload is FP32.
 
 The source code compiles into a Metal dynamic library and a header, which other applications can utilize for double-precision arithmetic. Some FP64 operations can be fully inlined for maximum ALU performance, but others are so large they would bloat the client executable. To address this problem, larger functions invoke function calls into the Metal dynamic library. If possible, clients should operate on multiple floats at a time (e.g. `double2`, `double3`, `double4`). The vectorized function variants minimize binary size and amortize the overhead of function calls. In addition to Metal Standard Library function aliases, there will also be efficient dot-accumulate functions.
 
-Since MetalFloat64 requires function pointers and Metal dynamic libraries, it only runs on Apple6 family or newer GPUs. This includes the A13 Bionic and all other Apple GPUs that support the Metal 3 feature set. For Intel Macs, it runs on all devices supporting macOS Ventura.
+Since libMetalFloat64 requires function pointers and Metal dynamic libraries, it only runs on Apple6 family or newer GPUs. This includes the A13 Bionic and all other Apple GPUs that support the Metal 3 feature set. For Intel Macs, it runs on all devices supporting macOS Ventura.
 
 ## Theory
 
@@ -58,7 +58,7 @@ ls .build/MetalFloat64/usr/placeholders
 TODO: Instructions for linking the library from command-line, and how to use when compiling sources at runtime. Make a CPU library for encapsulating the Float64 metallibs (only for SwiftPM) and decoding reduced-precision types on the host. Set the call stack depth in your compute pipelines to X amount.
 
 ```metal
-// Include MetalFloat64 after the Metal Standard Library.
+// Include libMetalFloat64 after the Metal Standard Library.
 #include <metal_stdlib>
 #include <metal_float64>
 using namespace metal;
