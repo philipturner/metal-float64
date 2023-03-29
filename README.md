@@ -99,8 +99,8 @@ FP32.normalized() - 1
 FP64>FP64 - 3
 FP64>FP64+CMPSEL - 5
 
-FP64+FP64=FP64 - 20
-FP64+FP64=FP32 - 18
+FP64+FP64=FP64 - 11
+FP64+FP64=FP32 - 9
 FP64+FP32=FP64 - 10
 FP64+FP32=FP32 - 8
 FP32+FP32=FP64 - 6
@@ -111,13 +111,10 @@ FP64*FP32=FP64 - 6
 FP64*FP32=FP32 - 4
 FP32*FP32=FP64 - 2
 
-FP64/FP64=FP64 - 38 + 1 (recip)
-FP64/FP32=FP64 - 33 + 1 (recip)
-FP32/FP64=FP64 - 28 + 1 (recip)
-FP32/FP32=FP64 - 23 + 1 (recip)
-
+- DO NOT FORGET TO ADD 1!!!
+FP64/FP64=FP64 - 28 + 1 (recip)
 FP64.recip() - 26 + 1 (recip)
-FP64.sqrt() - 34 + 1 (rsqrt)
+FP64.sqrt() - 27 + 1 (rsqrt)
 FP64.rsqrt() - 30 + 1 (rsqrt)
 ```
 -->
